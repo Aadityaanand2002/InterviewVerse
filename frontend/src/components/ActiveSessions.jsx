@@ -67,9 +67,7 @@ function ActiveSessions({ sessions, isLoading, isUserInSession }) {
                           {(() => {
                             const isHost = session.host?.clerkId === user?.id;
                             if (isHost) {
-                              return session.participant
-                                ? `Interview with ${session.participant.name?.split(" ")[0] || "Candidate"}`
-                                : "Interview Session";
+                              return `Interview with ${session.candidateName || "Candidate"}`;
                             }
                             return `Interview with ${session.host?.name?.split(" ")[0] || "Interviewer"}`;
                           })()}

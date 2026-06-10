@@ -32,6 +32,7 @@ function CreateSessionModal({
               onChange={(e) => {
                 const selectedProblem = problems.find((p) => p.title === e.target.value);
                 setRoomConfig({
+                  ...roomConfig,
                   difficulty: selectedProblem.difficulty,
                   problem: e.target.value,
                 });
@@ -47,6 +48,34 @@ function CreateSessionModal({
                 </option>
               ))}
             </select>
+          </div>
+
+          <div className="space-y-2">
+            <label className="label">
+              <span className="label-text font-semibold">Candidate Name</span>
+              <span className="label-text-alt text-error">*</span>
+            </label>
+            <input
+              type="text"
+              className="input input-bordered w-full"
+              placeholder="e.g. John Doe"
+              value={roomConfig.candidateName || ""}
+              onChange={(e) => setRoomConfig({ ...roomConfig, candidateName: e.target.value })}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <label className="label">
+              <span className="label-text font-semibold">Candidate Email</span>
+              <span className="label-text-alt text-error">*</span>
+            </label>
+            <input
+              type="email"
+              className="input input-bordered w-full"
+              placeholder="e.g. john@example.com"
+              value={roomConfig.candidateEmail || ""}
+              onChange={(e) => setRoomConfig({ ...roomConfig, candidateEmail: e.target.value })}
+            />
           </div>
 
           {/* ROOM SUMMARY */}
@@ -74,7 +103,7 @@ function CreateSessionModal({
           <button
             className="btn btn-primary gap-2"
             onClick={onCreateRoom}
-            disabled={isCreating || !roomConfig.problem}
+            disabled={isCreating || !roomConfig.problem || !roomConfig.candidateName || !roomConfig.candidateEmail}
           >
             {isCreating ? (
               <LoaderIcon className="size-5 animate-spin" />
