@@ -11,6 +11,14 @@ const sessionSchema = new mongoose.Schema(
       enum: ["easy", "medium", "hard"],
       required: true,
     },
+    candidateName: {
+      type: String,
+      required: true,
+    },
+    candidateEmail: {
+      type: String,
+      required: true,
+    },
     host: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
@@ -39,6 +47,14 @@ const sessionSchema = new mongoose.Schema(
     evaluationNotes: {
       type: String,
       default: "",
+    },
+    finalCode: {
+      type: String,
+      default: "",
+    },
+    finalLanguage: {
+      type: String,
+      default: "javascript",
     },
   },
   { timestamps: true }

@@ -2,6 +2,7 @@ import { Code2, Clock, Users, Trophy, Loader } from "lucide-react";
 import { getDifficultyBadgeClass } from "../lib/utils";
 import { formatDistanceToNow } from "date-fns";
 import { useUser } from "@clerk/clerk-react";
+import { Link } from "react-router";
 
 function RecentSessions({ sessions, isLoading }) {
   const { user } = useUser();
@@ -22,8 +23,9 @@ function RecentSessions({ sessions, isLoading }) {
             </div>
           ) : sessions.length > 0 ? (
             sessions.map((session) => (
-              <div
+              <Link
                 key={session._id}
+                to={`/report/${session._id}`}
                 className={`card relative ${
                   session.status === "active"
                     ? "bg-success/10 border-success/30 hover:border-success/60"
@@ -56,9 +58,7 @@ function RecentSessions({ sessions, isLoading }) {
                           {(() => {
                             const isHost = session.host?.clerkId === user?.id;
                             if (isHost) {
-                              return session.participant
-                                ? `Interview with ${session.participant.name?.split(" ")[0] || "Candidate"}`
-                                : "Interview Session";
+                              return `Interview with ${session.candidateName || "Candidate"}`;
                             }
                             return `Interview with ${session.host?.name?.split(" ")[0] || "Interviewer"}`;
                           })()}
@@ -102,7 +102,7 @@ function RecentSessions({ sessions, isLoading }) {
                     </span>
                   </div>
                 </div>
-              </div>
+              </Link>
             ))
           ) : (
             <div className="col-span-full text-center py-16">

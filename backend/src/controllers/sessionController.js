@@ -3,19 +3,26 @@ import Session from "../models/Session.js";
 
 export async function createSession(req, res) {
   try {
-    const { problem, difficulty } = req.body;
+    const { problem, difficulty, candidateName, candidateEmail } = req.body;
     const userId = req.user._id;
     const clerkId = req.user.clerkId;
 
-    if (!problem || !difficulty) {
-      return res.status(400).json({ message: "Problem and difficulty are required" });
+    if (!problem || !difficulty || !candidateName || !candidateEmail) {
+      return res.status(400).json({ message: "Problem, difficulty, candidate name, and email are required" });
     }
 
     // generate a unique call id for stream video
     const callId = `session_${Date.now()}_${Math.random().toString(36).substring(7)}`;
 
     // create session in db
-    const session = await Session.create({ problem, difficulty, host: userId, callId });
+    const session = await Session.create({ 
+      problem, 
+      difficulty, 
+      candidateName,
+      candidateEmail,
+      host: userId, 
+      callId 
+    });
 
     // create stream video call
     await streamClient.video.call("default", callId).getOrCreate({
@@ -47,7 +54,7 @@ export async function getActiveSessions(req, res) {
 
     const sessions = await Session.find({ 
       status: "active",
-      $or: [{ host: userId }, { participant: userId }]
+      $or: [{ host: userId }, { participant: userId }, { candidateEmail: req.user.email }]
     })
       .populate("host", "name profileImage email clerkId")
       .populate("participant", "name profileImage email clerkId")
@@ -68,7 +75,7 @@ export async function getMyRecentSessions(req, res) {
     // get sessions where user is either host or participant
     const sessions = await Session.find({
       status: "completed",
-      $or: [{ host: userId }, { participant: userId }],
+      $or: [{ host: userId }, { participant: userId }, { candidateEmail: req.user.email }],
     })
       .populate("host", "name profileImage email clerkId")
       .populate("participant", "name profileImage email clerkId")
@@ -137,6 +144,7 @@ export async function joinSession(req, res) {
 export async function endSession(req, res) {
   try {
     const { id } = req.params;
+    const { finalCode, finalLanguage } = req.body;
     const userId = req.user._id;
 
     const session = await Session.findById(id);
@@ -155,6 +163,8 @@ export async function endSession(req, res) {
 
     // mark as completed first so DB updates correctly
     session.status = "completed";
+    if (finalCode !== undefined) session.finalCode = finalCode;
+    if (finalLanguage) session.finalLanguage = finalLanguage;
     await session.save();
 
     try {

@@ -68,7 +68,7 @@ export const useEndSession = () => {
   const queryClient = useQueryClient();
   const result = useMutation({
     mutationKey: ["endSession"],
-    mutationFn: sessionApi.endSession,
+    mutationFn: ({ id, data }) => sessionApi.endSession({ id, data }),
     onSuccess: () => {
       toast.success("Session ended successfully!");
       queryClient.invalidateQueries({ queryKey: ["activeSessions"] });
