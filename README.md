@@ -77,3 +77,6 @@ cd frontend
 npm install
 npm run dev
 ```
+
+
+<!-- Trigger CodeRabbit webhook -->
