@@ -15,23 +15,35 @@ function MeetingSetup({ session, isHost, isParticipant, onJoin, onAskToJoin, ask
   const videoRef = useRef(null);
   const streamRef = useRef(null);
 
-  useEffect(() => {
-    const setupMedia = async () => {
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({
-          video: true,
-          audio: true,
-        });
-        streamRef.current = stream;
-        if (videoRef.current) {
-          videoRef.current.srcObject = stream;
-        }
-      } catch (err) {
-        console.error("Failed to get media devices:", err);
-        setIsCamOn(false);
-        setIsMicOn(false);
+  const setupMedia = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: true,
+        audio: true,
+      });
+      streamRef.current = stream;
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
       }
-    };
+      setIsCamOn(true);
+      setIsMicOn(true);
+    } catch (err) {
+      console.error("Failed to get media devices:", err);
+      setIsCamOn(false);
+      setIsMicOn(false);
+      import("react-hot-toast").then((module) => {
+        if (err?.name === "NotAllowedError") {
+          module.default.error("Microphone/Camera permission denied. Please enable it in your browser settings.");
+        } else if (err?.name === "NotFoundError") {
+          module.default.error("No camera or microphone found on your device.");
+        } else {
+          module.default.error(`Media Error: ${err.message || "Could not access camera/mic"}`);
+        }
+      });
+    }
+  };
+
+  useEffect(() => {
     setupMedia();
 
     return () => {
@@ -41,25 +53,29 @@ function MeetingSetup({ session, isHost, isParticipant, onJoin, onAskToJoin, ask
     };
   }, []);
 
-  const toggleCamera = () => {
-    if (streamRef.current) {
-      const videoTrack = streamRef.current.getVideoTracks()[0];
-      if (videoTrack) {
-        videoTrack.enabled = !isCamOn;
-        setIsCamOn(!isCamOn);
-        localStorage.setItem("interview-cam-mic-state", JSON.stringify({ isCamOn: !isCamOn, isMicOn }));
-      }
+  const toggleCamera = async () => {
+    if (!streamRef.current) {
+      await setupMedia();
+      return;
+    }
+    const videoTrack = streamRef.current.getVideoTracks()[0];
+    if (videoTrack) {
+      videoTrack.enabled = !isCamOn;
+      setIsCamOn(!isCamOn);
+      localStorage.setItem("interview-cam-mic-state", JSON.stringify({ isCamOn: !isCamOn, isMicOn }));
     }
   };
 
-  const toggleMic = () => {
-    if (streamRef.current) {
-      const audioTrack = streamRef.current.getAudioTracks()[0];
-      if (audioTrack) {
-        audioTrack.enabled = !isMicOn;
-        setIsMicOn(!isMicOn);
-        localStorage.setItem("interview-cam-mic-state", JSON.stringify({ isCamOn, isMicOn: !isMicOn }));
-      }
+  const toggleMic = async () => {
+    if (!streamRef.current) {
+      await setupMedia();
+      return;
+    }
+    const audioTrack = streamRef.current.getAudioTracks()[0];
+    if (audioTrack) {
+      audioTrack.enabled = !isMicOn;
+      setIsMicOn(!isMicOn);
+      localStorage.setItem("interview-cam-mic-state", JSON.stringify({ isCamOn, isMicOn: !isMicOn }));
     }
   };
 

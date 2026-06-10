@@ -1,13 +1,17 @@
 import {
-  CallControls,
   CallingState,
   SpeakerLayout,
   PaginatedGridLayout,
   CallParticipantsList,
   CallStatsButton,
   useCallStateHooks,
+  ToggleAudioPublishingButton,
+  ToggleVideoPublishingButton,
+  ScreenShareButton,
+  CancelCallButton,
+  DeviceSettings,
 } from "@stream-io/video-react-sdk";
-import { Loader2Icon, MessageSquareIcon, UsersIcon, XIcon, LayoutGridIcon, UserIcon } from "lucide-react";
+import { Loader2Icon, MessageSquareIcon, UsersIcon, XIcon, LayoutGridIcon, SettingsIcon } from "lucide-react";
 import { useState } from "react";
 import { useNavigate } from "react-router";
 import { Channel, Chat, MessageInput, MessageList, Thread, Window } from "stream-chat-react";
@@ -79,9 +83,26 @@ function VideoCallUI({ chatClient, channel }) {
           {layout === "speaker" ? <SpeakerLayout /> : <PaginatedGridLayout />}
         </div>
 
-        <div className="bg-base-100 p-3 rounded-lg shadow flex justify-center items-center gap-2">
+        <div className="bg-base-100 p-3 rounded-lg shadow flex justify-center items-center gap-4 relative">
           <CallStatsButton />
-          <CallControls onLeave={() => navigate("/dashboard")} />
+          
+          <div className="flex items-center gap-2">
+            <ToggleAudioPublishingButton />
+            <ToggleVideoPublishingButton />
+          </div>
+          
+          <div className="divider divider-horizontal m-0"></div>
+          
+          <div className="flex items-center gap-2">
+            <ScreenShareButton />
+          </div>
+
+          <div className="divider divider-horizontal m-0"></div>
+
+          <div className="flex items-center gap-2">
+            <DeviceSettings />
+            <CancelCallButton onLeave={() => navigate("/dashboard")} />
+          </div>
         </div>
       </div>
 
