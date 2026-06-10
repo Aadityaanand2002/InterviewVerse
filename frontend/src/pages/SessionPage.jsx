@@ -16,7 +16,7 @@ import { executeCode } from "../lib/piston";
 import Navbar from "../components/Navbar";
 import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
 import { getDifficultyBadgeClass } from "../lib/utils";
-import { Loader2Icon, LogOutIcon, PhoneOffIcon, CopyIcon } from "lucide-react";
+import { Loader2Icon, LogOutIcon, PhoneOffIcon, CopyIcon, MaximizeIcon } from "lucide-react";
 import toast from "react-hot-toast";
 import CodeEditorPanel from "../components/CodeEditorPanel";
 import OutputPanel from "../components/OutputPanel";
@@ -25,6 +25,7 @@ import useStreamClient from "../hooks/useStreamClient";
 import { StreamCall, StreamVideo } from "@stream-io/video-react-sdk";
 import VideoCallUI from "../components/VideoCallUI";
 import MeetingSetup from "../components/MeetingSetup";
+import Whiteboard from "../components/Whiteboard";
 
 function SessionPage() {
   const navigate = useNavigate();
@@ -32,6 +33,7 @@ function SessionPage() {
   const { user } = useUser();
   const [output, setOutput] = useState(null);
   const [isRunning, setIsRunning] = useState(false);
+  const [activeTab, setActiveTab] = useState("code"); // 'code' or 'whiteboard'
 
   const { data: sessionData, isLoading: loadingSession, refetch } = useSessionById(id);
 
@@ -103,12 +105,18 @@ function SessionPage() {
     }
   };
 
-  // redirect the "participant" when session ends
+  // redirect logic when session ends
   useEffect(() => {
-    if (!session || loadingSession) return;
-
-    if (session.status === "completed") navigate("/dashboard");
-  }, [session, loadingSession, navigate]);
+    if (!session || loadingSession || !user) return;
+    if (session.status === "completed") {
+      const isHost = session.host._id === user._id;
+      if (isHost) {
+        navigate(`/report/${session._id}`);
+      } else {
+        navigate("/dashboard");
+      }
+    }
+  }, [session, loadingSession, navigate, user]);
 
   // Auto-complete setup for candidate when they are admitted
   useEffect(() => {
@@ -144,10 +152,26 @@ function SessionPage() {
     setIsRunning(false);
   };
 
+  const handleFullscreen = () => {
+    const elem = document.getElementById("left-panel-content");
+    if (elem) {
+      if (!document.fullscreenElement) {
+        elem.requestFullscreen().catch((err) => {
+          toast.error(`Error attempting to enable full-screen mode: ${err.message}`);
+        });
+      } else {
+        document.exitFullscreen();
+      }
+    }
+  };
+
   const handleEndSession = () => {
     if (confirm("Are you sure you want to end this session? All participants will be notified.")) {
-      // this will navigate the HOST to dashboard
-      endSessionMutation.mutate(id, { onSuccess: () => navigate("/dashboard") });
+      // this will navigate the HOST to dashboard or report
+      endSessionMutation.mutate({ 
+        id, 
+        data: { finalCode: code, finalLanguage: selectedLanguage }
+      }, { onSuccess: () => navigate(`/report/${id}`) });
     }
   };
 
@@ -430,24 +454,57 @@ function SessionPage() {
               <PanelResizeHandle className="h-2 bg-base-300 hover:bg-primary transition-colors cursor-row-resize" />
 
               <Panel defaultSize={50} minSize={20}>
-                <PanelGroup direction="vertical">
-                  <Panel defaultSize={70} minSize={30}>
-                    <CodeEditorPanel
-                      selectedLanguage={selectedLanguage}
-                      code={code}
-                      isRunning={isRunning}
-                      onLanguageChange={handleLanguageChange}
-                      onCodeChange={(value) => setCode(value)}
-                      onRunCode={handleRunCode}
-                    />
-                  </Panel>
+                <div id="left-panel-content" className="flex flex-col h-full w-full bg-base-100">
+                  {/* MODE TOGGLE */}
+                  <div className="flex items-center justify-between p-2 bg-base-200 border-b border-base-300 shrink-0">
+                    <div className="flex items-center gap-2">
+                      <button 
+                        className={`btn btn-sm ${activeTab === "code" ? "btn-primary" : "btn-ghost"}`}
+                        onClick={() => setActiveTab("code")}
+                      >
+                        Code Editor
+                      </button>
+                      <button 
+                        className={`btn btn-sm ${activeTab === "whiteboard" ? "btn-primary" : "btn-ghost"}`}
+                        onClick={() => setActiveTab("whiteboard")}
+                      >
+                        Whiteboard
+                      </button>
+                    </div>
+                    <button 
+                      className="btn btn-sm btn-ghost btn-square" 
+                      onClick={handleFullscreen}
+                      title="Toggle Fullscreen"
+                    >
+                      <MaximizeIcon className="w-4 h-4" />
+                    </button>
+                  </div>
 
-                  <PanelResizeHandle className="h-2 bg-base-300 hover:bg-primary transition-colors cursor-row-resize" />
+                  <div className="flex-1 relative w-full">
+                    {activeTab === "code" ? (
+                      <PanelGroup direction="vertical">
+                        <Panel defaultSize={70} minSize={30}>
+                          <CodeEditorPanel
+                            selectedLanguage={selectedLanguage}
+                            code={code}
+                            isRunning={isRunning}
+                            onLanguageChange={handleLanguageChange}
+                            onCodeChange={(value) => setCode(value)}
+                            onRunCode={handleRunCode}
+                          />
+                        </Panel>
 
-                  <Panel defaultSize={30} minSize={15}>
-                    <OutputPanel output={output} />
-                  </Panel>
-                </PanelGroup>
+                        <PanelResizeHandle className="h-2 bg-base-300 hover:bg-primary transition-colors cursor-row-resize" />
+
+                        <Panel defaultSize={30} minSize={15}>
+                          <OutputPanel output={output} />
+                        </Panel>
+                      </PanelGroup>
+                    ) : (
+                      <Whiteboard />
+                    )}
+                  </div>
+                </div>
               </Panel>
             </PanelGroup>
           </Panel>
