@@ -10,3 +10,43 @@
     cursor: pointer;
   }
 }
+
+/* LeetCode HTML Content Styling */
+.leetcode-html {
+  font-family: inherit;
+  font-size: 0.95rem;
+}
+.leetcode-html pre {
+  background-color: oklch(var(--b2));
+  padding: 1rem;
+  border-radius: 0.5rem;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  font-size: 0.875rem;
+  margin: 1rem 0;
+  border-left: 4px solid oklch(var(--b3));
+  overflow-x: auto;
+  white-space: pre-wrap;
+}
+.leetcode-html code {
+  background-color: oklch(var(--b2));
+  padding: 0.1rem 0.3rem;
+  border-radius: 0.25rem;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  font-size: 0.875em;
+}
+.leetcode-html strong.example {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-size: 1.1em;
+}
+.leetcode-html p {
+  margin-bottom: 1rem;
+}
+.leetcode-html ul {
+  list-style-type: disc;
+  padding-left: 1.5rem;
+  margin-bottom: 1rem;
+}
+.leetcode-html li {
+  margin-bottom: 0.25rem;
+}

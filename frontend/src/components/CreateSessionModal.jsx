@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react";
 import { Code2Icon, LoaderIcon, PlusIcon } from "lucide-react";
 import { PROBLEMS } from "../data/problems";
 
@@ -11,6 +12,30 @@ function CreateSessionModal({
 }) {
   const problems = Object.values(PROBLEMS);
 
+  const [scheduleDate, setScheduleDate] = useState("");
+  const [scheduleTime, setScheduleTime] = useState("");
+
+  useEffect(() => {
+    if (!isOpen) {
+      setScheduleDate("");
+      setScheduleTime("");
+    }
+  }, [isOpen]);
+
+  useEffect(() => {
+    if (scheduleDate && scheduleTime) {
+      setRoomConfig((prev) => ({
+        ...prev,
+        scheduledAt: `${scheduleDate}T${scheduleTime}`,
+      }));
+    } else {
+      setRoomConfig((prev) => ({
+        ...prev,
+        scheduledAt: "",
+      }));
+    }
+  }, [scheduleDate, scheduleTime, setRoomConfig]);
+
   if (!isOpen) return null;
 
   return (
@@ -19,37 +44,6 @@ function CreateSessionModal({
         <h3 className="font-bold text-2xl mb-6">Create New Session</h3>
 
         <div className="space-y-8">
-          {/* PROBLEM SELECTION */}
-          <div className="space-y-2">
-            <label className="label">
-              <span className="label-text font-semibold">Select Problem</span>
-              <span className="label-text-alt text-error">*</span>
-            </label>
-
-            <select
-              className="select w-full"
-              value={roomConfig.problem}
-              onChange={(e) => {
-                const selectedProblem = problems.find((p) => p.title === e.target.value);
-                setRoomConfig({
-                  ...roomConfig,
-                  difficulty: selectedProblem.difficulty,
-                  problem: e.target.value,
-                });
-              }}
-            >
-              <option value="" disabled>
-                Choose a coding problem...
-              </option>
-
-              {problems.map((problem) => (
-                <option key={problem.id} value={problem.title}>
-                  {problem.title} ({problem.difficulty})
-                </option>
-              ))}
-            </select>
-          </div>
-
           <div className="space-y-2">
             <label className="label">
               <span className="label-text font-semibold">Candidate Name</span>
@@ -78,32 +72,48 @@ function CreateSessionModal({
             />
           </div>
 
-          {/* ROOM SUMMARY */}
-          {roomConfig.problem && (
-            <div className="alert alert-success">
-              <Code2Icon className="size-5" />
-              <div>
-                <p className="font-semibold">Room Summary:</p>
-                <p>
-                  Problem: <span className="font-medium">{roomConfig.problem}</span>
-                </p>
-                <p>
-                  Max Participants: <span className="font-medium">2 (1-on-1 session)</span>
-                </p>
+          <div className="space-y-2">
+            <label className="label">
+              <span className="label-text font-semibold">Schedule For (Optional)</span>
+            </label>
+            <div className="flex gap-4">
+              <div className="flex-1 space-y-1">
+                <span className="text-xs text-base-content/70">Date</span>
+                <input
+                  type="date"
+                  className="input input-bordered w-full"
+                  value={scheduleDate}
+                  onChange={(e) => setScheduleDate(e.target.value)}
+                />
+              </div>
+              <div className="flex-1 space-y-1">
+                <span className="text-xs text-base-content/70">Time</span>
+                <input
+                  type="time"
+                  className="input input-bordered w-full"
+                  value={scheduleTime}
+                  onChange={(e) => setScheduleTime(e.target.value)}
+                />
               </div>
             </div>
-          )}
+            <label className="label">
+              <span className="label-text-alt text-base-content/60">
+                If left empty, the interview starts immediately.
+              </span>
+            </label>
+          </div>
+
         </div>
 
         <div className="modal-action">
-          <button className="btn btn-ghost" onClick={onClose}>
+          <button type="button" className="btn btn-ghost" onClick={onClose}>
             Cancel
           </button>
 
           <button
             className="btn btn-primary gap-2"
             onClick={onCreateRoom}
-            disabled={isCreating || !roomConfig.problem || !roomConfig.candidateName || !roomConfig.candidateEmail}
+            disabled={isCreating || !roomConfig.candidateName || !roomConfig.candidateEmail}
           >
             {isCreating ? (
               <LoaderIcon className="size-5 animate-spin" />

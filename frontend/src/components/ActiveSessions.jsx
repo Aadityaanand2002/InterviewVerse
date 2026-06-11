@@ -7,6 +7,9 @@ import {
   ZapIcon,
   LoaderIcon,
   CopyIcon,
+  CalendarClock,
+  Code2,
+  Users,
 } from "lucide-react";
 import { Link } from "react-router";
 import toast from "react-hot-toast";
@@ -51,8 +54,25 @@ function ActiveSessions({ sessions, isLoading, isUserInSession }) {
             sessions.map((session) => (
               <div
                 key={session._id}
-                className="card bg-base-200 border-2 border-base-300 hover:border-primary/50"
+                className={`card relative border-2 ${
+                  session.status === "scheduled"
+                    ? "bg-warning/5 border-warning/30 hover:border-warning/60"
+                    : "bg-success/5 border-success/20 hover:border-success/50"
+                } transition-all duration-200 hover:-translate-y-1 shadow-sm hover:shadow-md`}
               >
+                <div className="absolute top-3 right-3">
+                  {session.status === "scheduled" ? (
+                    <div className="badge badge-warning gap-1">
+                      <CalendarClock className="w-3 h-3" />
+                      SCHEDULED
+                    </div>
+                  ) : (
+                    <div className="badge badge-success gap-1">
+                      <div className="w-1.5 h-1.5 bg-success rounded-full animate-pulse" />
+                      ACTIVE
+                    </div>
+                  )}
+                </div>
                 <div className="flex items-center justify-between gap-4 p-5">
                   {/* LEFT SIDE */}
                   <div className="flex items-center gap-4 flex-1">
@@ -87,15 +107,23 @@ function ActiveSessions({ sessions, isLoading, isUserInSession }) {
                         </div>
                       </div>
 
-                      <div className="flex items-center gap-4 text-sm opacity-80">
+                      <div className="flex flex-wrap items-center gap-4 text-sm opacity-80 mt-2">
                         <div className="flex items-center gap-1.5">
-                          <CrownIcon className="size-4" />
+                          <CrownIcon className="size-4 text-primary" />
                           <span className="font-medium">{session.host?.name}</span>
                         </div>
                         <div className="flex items-center gap-1.5">
                           <UsersIcon className="size-4" />
                           <span className="text-xs">{session.participant ? "2/2" : "1/2"}</span>
                         </div>
+                        {session.scheduledAt && (
+                          <div className="flex items-center gap-1.5">
+                            <CalendarClock className="size-4 text-warning" />
+                            <span className="text-xs font-semibold text-warning-content bg-warning/10 px-2 py-0.5 rounded-md">
+                              {new Date(session.scheduledAt).toLocaleString([], { dateStyle: "short", timeStyle: "short" })}
+                            </span>
+                          </div>
+                        )}
                         {session.participant && !isUserInSession(session) ? (
                           <span className="badge badge-error badge-sm">FULL</span>
                         ) : (

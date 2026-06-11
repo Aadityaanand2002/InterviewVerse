@@ -2,12 +2,13 @@ import { Inngest } from "inngest";
 import { connectDB } from "./db.js";
 import User from "../models/User.js";
 import { deleteStreamUser, upsertStreamUser } from "./stream.js";
+import Session from "../models/Session.js";
+import nodemailer from "nodemailer";
 
-export const inngest = new Inngest({ id: "interviewverse" });
+export const inngest = new Inngest({ id: "interviewverse", isDev: true });
 
 const syncUser = inngest.createFunction(
-  { id: "sync-user" },
-  { event: "clerk/user.created" },
+  { id: "sync-user", event: "clerk/user.created" },
   async ({ event }) => {
     await connectDB();
 
@@ -31,8 +32,7 @@ const syncUser = inngest.createFunction(
 );
 
 const deleteUserFromDB = inngest.createFunction(
-  { id: "delete-user-from-db" },
-  { event: "clerk/user.deleted" },
+  { id: "delete-user-from-db", event: "clerk/user.deleted" },
   async ({ event }) => {
     await connectDB();
 
@@ -43,4 +43,28 @@ const deleteUserFromDB = inngest.createFunction(
   }
 );
 
-export const functions = [syncUser, deleteUserFromDB];
+const handleScheduledSession = inngest.createFunction(
+  { id: "handle-scheduled-session", event: "session/scheduled" },
+  async ({ event, step }) => {
+    const { sessionId, scheduledAt, candidateName, candidateEmail, hostName, problem } = event.data;
+
+    // Email is now sent directly in the controller to guarantee delivery
+
+
+    // Step 2: Sleep until the scheduled time
+    await step.sleepUntil("wait-for-interview", new Date(scheduledAt));
+
+    // Step 3: Activate the room
+    await step.run("activate-room", async () => {
+      await connectDB();
+      const session = await Session.findById(sessionId);
+      if (session && session.status === "scheduled") {
+        session.status = "active";
+        await session.save();
+        console.log(`Session ${sessionId} is now ACTIVE!`);
+      }
+    });
+  }
+);
+
+export const functions = [syncUser, deleteUserFromDB, handleScheduledSession];

@@ -11,21 +11,22 @@ import {
   useAdmitParticipant,
   useDenyParticipant
 } from "../hooks/useSessions";
-import { PROBLEMS } from "../data/problems";
+import { useProblems } from "../hooks/useProblems";
 import { executeCode } from "../lib/piston";
 import Navbar from "../components/Navbar";
 import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
 import { getDifficultyBadgeClass } from "../lib/utils";
 import { Loader2Icon, LogOutIcon, PhoneOffIcon, CopyIcon, MaximizeIcon } from "lucide-react";
 import toast from "react-hot-toast";
-import CodeEditorPanel from "../components/CodeEditorPanel";
 import OutputPanel from "../components/OutputPanel";
+import ProblemDescription from "../components/ProblemDescription";
 
 import useStreamClient from "../hooks/useStreamClient";
 import { StreamCall, StreamVideo } from "@stream-io/video-react-sdk";
 import VideoCallUI from "../components/VideoCallUI";
 import MeetingSetup from "../components/MeetingSetup";
 import Whiteboard from "../components/Whiteboard";
+import CodeEditorPanel from "../components/CodeEditorPanel";
 
 function SessionPage() {
   const navigate = useNavigate();
@@ -73,9 +74,12 @@ function SessionPage() {
     camMicState
   );
 
+  const { data: problemsData } = useProblems();
+  const problems = problemsData || [];
+
   // find the problem data based on session problem title
   const problemData = session?.problem
-    ? Object.values(PROBLEMS).find((p) => p.title === session.problem)
+    ? problems.find((p) => p.title === session.problem)
     : null;
 
   const [selectedLanguage, setSelectedLanguage] = useState("javascript");
@@ -89,13 +93,69 @@ function SessionPage() {
     }
   }, [session?.evaluationNotes]);
 
+  // Anti-cheat listeners
+  useEffect(() => {
+    if (!isParticipant || !channel) return;
+
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        channel.sendEvent({
+          type: "custom",
+          proctoring_alert: {
+            type: "tab_switch",
+            timestamp: Date.now(),
+            userName: user?.fullName || "Candidate",
+          },
+        });
+      }
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    return () => document.removeEventListener("visibilitychange", handleVisibilityChange);
+  }, [isParticipant, channel, user]);
+
+  const handleCheatAlert = (action) => {
+    if (!isParticipant || !channel) return;
+    channel.sendEvent({
+      type: "custom",
+      proctoring_alert: {
+        type: action,
+        timestamp: Date.now(),
+        userName: user?.fullName || "Candidate",
+      },
+    });
+  };
+
+  // Listen for proctoring alerts
+  useEffect(() => {
+    if (!channel) return;
+
+    const handleCustomEvent = (event) => {
+      if (event.type === "custom" && event.proctoring_alert) {
+        if (isHost) {
+          const { type, userName } = event.proctoring_alert;
+          if (type === "tab_switch") {
+            toast.error(`🚨 Warning: ${userName} switched browser tabs!`);
+          } else if (type === "large_paste") {
+            toast.error(`🚨 Warning: ${userName} pasted a large chunk of code!`);
+          }
+        }
+      }
+    };
+
+    channel.on("custom", handleCustomEvent);
+    return () => {
+      channel.off("custom", handleCustomEvent);
+    };
+  }, [channel, isHost]);
+
   const handleSaveNotes = () => {
     updateSessionNotesMutation.mutate({ id, data: { evaluationNotes: notes } });
   };
 
   const handleProblemChange = (e) => {
     const newProblemTitle = e.target.value;
-    const newProblemData = Object.values(PROBLEMS).find((p) => p.title === newProblemTitle);
+    const newProblemData = problems.find((p) => p.title === newProblemTitle);
     
     if (newProblemData) {
       updateSessionProblemMutation.mutate({ 
@@ -143,11 +203,55 @@ function SessionPage() {
     setOutput(null);
   };
 
+  const normalizeOutput = (output) => {
+    return output
+      .trim()
+      .split("\n")
+      .map((line) =>
+        line
+          .trim()
+          .replace(/\[\s+/g, "[")
+          .replace(/\s+\]/g, "]")
+          .replace(/\s*,\s*/g, ",")
+          .replace(/'/g, '"')
+      )
+      .filter((line) => line.length > 0)
+      .join("\n");
+  };
+
+  const checkIfTestsPassed = (actualOutput, expectedOutput) => {
+    if (!expectedOutput) return null; // No expected output available to compare
+    const normalizedActual = normalizeOutput(actualOutput);
+    const normalizedExpected = normalizeOutput(expectedOutput);
+    return normalizedActual == normalizedExpected;
+  };
+
   const handleRunCode = async () => {
     setIsRunning(true);
     setOutput(null);
 
     const result = await executeCode(selectedLanguage, code);
+    
+    if (result.success) {
+      const expectedOutput = problemData?.expectedOutput?.[selectedLanguage];
+      if (expectedOutput) {
+        const testsPassed = checkIfTestsPassed(result.output, expectedOutput);
+        result.isCorrect = testsPassed;
+        result.expectedOutput = expectedOutput;
+        
+        if (testsPassed) {
+          toast.success("All tests passed! Great job!");
+        } else {
+          toast.error("Tests failed. Check your output!");
+        }
+      } else {
+        // If no expected output, just assume execution is accepted if it didn't throw error
+        result.isCorrect = true;
+      }
+    } else {
+      toast.error("Code execution failed!");
+    }
+    
     setOutput(result);
     setIsRunning(false);
   };
@@ -252,14 +356,16 @@ function SessionPage() {
                     <div className="flex items-start justify-between mb-3">
                       <div>
                         {isHost ? (
-                          <select 
-                            className="select select-bordered select-sm font-bold text-lg w-full max-w-xs mb-2"
-                            value={session?.problem}
+                          <select
+                            className="select select-sm w-full"
+                            value={problemData?.title || ""}
                             onChange={handleProblemChange}
-                            disabled={updateSessionProblemMutation.isPending}
                           >
-                            {Object.values(PROBLEMS).map(p => (
-                              <option key={p.id} value={p.title}>{p.title}</option>
+                            <option value="" disabled>Select a problem</option>
+                            {problems.map((p) => (
+                              <option key={p.title} value={p.title}>
+                                {p.title} - {p.difficulty}
+                              </option>
                             ))}
                           </select>
                         ) : (
@@ -318,117 +424,28 @@ function SessionPage() {
                     </div>
                   </div>
 
-                  <div className="p-6 space-y-6">
-                    {/* problem desc */}
-                    {problemData?.description && (
-                      <div className="bg-base-100 rounded-xl shadow-sm p-5 border border-base-300">
-                        <h2 className="text-xl font-bold mb-4 text-base-content">Description</h2>
-                        <div className="space-y-3 text-base leading-relaxed">
-                          <p className="text-base-content/90">{problemData.description.text}</p>
-                          {problemData.description.notes?.map((note, idx) => (
-                            <p key={idx} className="text-base-content/90">
-                              {note}
-                            </p>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* examples section */}
-                    {problemData?.examples && problemData.examples.length > 0 && (
-                      <div className="bg-base-100 rounded-xl shadow-sm p-5 border border-base-300">
-                        <h2 className="text-xl font-bold mb-4 text-base-content">Examples</h2>
-
-                        <div className="space-y-4">
-                          {problemData.examples.map((example, idx) => (
-                            <div key={idx}>
-                              <div className="flex items-center gap-2 mb-2">
-                                <span className="badge badge-sm">{idx + 1}</span>
-                                <p className="font-semibold text-base-content">Example {idx + 1}</p>
-                              </div>
-                              <div className="bg-base-200 rounded-lg p-4 font-mono text-sm space-y-1.5">
-                                <div className="flex gap-2">
-                                  <span className="text-primary font-bold min-w-[70px]">
-                                    Input:
-                                  </span>
-                                  <span>{example.input}</span>
-                                </div>
-                                <div className="flex gap-2">
-                                  <span className="text-secondary font-bold min-w-[70px]">
-                                    Output:
-                                  </span>
-                                  <span>{example.output}</span>
-                                </div>
-                                {example.explanation && (
-                                  <div className="pt-2 border-t border-base-300 mt-2">
-                                    <span className="text-base-content/60 font-sans text-xs">
-                                      <span className="font-semibold">Explanation:</span>{" "}
-                                      {example.explanation}
-                                    </span>
-                                  </div>
-                                )}
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* HIDDEN TEST CASES (HOST ONLY) */}
-                    {isHost && problemData?.hiddenTestCases && problemData.hiddenTestCases.length > 0 && (
-                      <div className="bg-base-100 rounded-xl shadow-sm p-5 border border-error/20">
-                        <h2 className="text-xl font-bold mb-4 text-error flex items-center gap-2">
-                          🔒 Hidden Test Cases (Interviewer Only)
-                        </h2>
-
-                        <div className="space-y-4">
-                          {problemData.hiddenTestCases.map((example, idx) => (
-                            <div key={idx}>
-                              <div className="flex items-center gap-2 mb-2">
-                                <span className="badge badge-error badge-sm text-error-content">{idx + 1}</span>
-                                <p className="font-semibold text-base-content">Edge Case {idx + 1}</p>
-                              </div>
-                              <div className="bg-error/5 rounded-lg p-4 font-mono text-sm space-y-1.5 border border-error/10">
-                                <div className="flex gap-2">
-                                  <span className="text-primary font-bold min-w-[70px]">Input:</span>
-                                  <span>{example.input}</span>
-                                </div>
-                                <div className="flex gap-2">
-                                  <span className="text-secondary font-bold min-w-[70px]">Output:</span>
-                                  <span>{example.output}</span>
-                                </div>
-                                {example.explanation && (
-                                  <div className="pt-2 border-t border-error/10 mt-2">
-                                    <span className="text-base-content/60 font-sans text-xs">
-                                      <span className="font-semibold">Explanation:</span> {example.explanation}
-                                    </span>
-                                  </div>
-                                )}
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Constraints */}
-                    {problemData?.constraints && problemData.constraints.length > 0 && (
-                      <div className="bg-base-100 rounded-xl shadow-sm p-5 border border-base-300">
-                        <h2 className="text-xl font-bold mb-4 text-base-content">Constraints</h2>
-                        <ul className="space-y-2 text-base-content/90">
-                          {problemData.constraints.map((constraint, idx) => (
-                            <li key={idx} className="flex gap-2">
-                              <span className="text-primary">•</span>
-                              <code className="text-sm">{constraint}</code>
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    )}
+                  <div className="p-0 space-y-0 h-full flex flex-col">
+                    <div className="flex-1 overflow-hidden">
+                      <ProblemDescription
+                        problem={
+                          problemData || {
+                            title: "To be assigned",
+                            difficulty: "Easy",
+                            category: "TBD",
+                            description: { text: "Waiting for the interviewer to assign a problem...", notes: [] },
+                            examples: [],
+                            constraints: [],
+                          }
+                        }
+                        currentProblemId={problemData?.title || ""}
+                        onProblemChange={isHost ? handleProblemChange : null}
+                        allProblems={problems}
+                      />
+                    </div>
 
                     {/* EVALUATION NOTES (HOST ONLY) */}
                     {isHost && (
-                      <div className="bg-base-100 rounded-xl shadow-sm p-5 border border-primary/20">
+                      <div className="bg-base-100 p-5 border-t border-primary/20 shrink-0">
                         <h2 className="text-xl font-bold mb-4 text-primary flex items-center gap-2">
                           📝 Private Evaluation Notes
                         </h2>
@@ -491,17 +508,18 @@ function SessionPage() {
                             onLanguageChange={handleLanguageChange}
                             onCodeChange={(value) => setCode(value)}
                             onRunCode={handleRunCode}
+                            onCheatAlert={handleCheatAlert}
                           />
                         </Panel>
 
                         <PanelResizeHandle className="h-2 bg-base-300 hover:bg-primary transition-colors cursor-row-resize" />
 
                         <Panel defaultSize={30} minSize={15}>
-                          <OutputPanel output={output} />
+                          <OutputPanel output={output} testcases={problemData?.examples || []} />
                         </Panel>
                       </PanelGroup>
                     ) : (
-                      <Whiteboard />
+                      <Whiteboard roomId={id} />
                     )}
                   </div>
                 </div>

@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router";
-import { PROBLEMS } from "../data/problems";
+import { useProblems } from "../hooks/useProblems";
 import Navbar from "../components/Navbar";
+import { Loader2Icon } from "lucide-react";
 
 import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
 import ProblemDescription from "../components/ProblemDescription";
@@ -16,22 +17,33 @@ function ProblemPage() {
   const { id } = useParams();
   const navigate = useNavigate();
 
-  const [currentProblemId, setCurrentProblemId] = useState("two-sum");
+  const { data: problemsData, isLoading } = useProblems();
+  const problems = problemsData || [];
+
+  const [currentProblemId, setCurrentProblemId] = useState(id || "");
   const [selectedLanguage, setSelectedLanguage] = useState("javascript");
-  const [code, setCode] = useState(PROBLEMS[currentProblemId].starterCode.javascript);
+  
+  // Find current problem
+  const currentProblem = problems.find(p => p._id === currentProblemId) || problems[0];
+
+  const [code, setCode] = useState("");
   const [output, setOutput] = useState(null);
   const [isRunning, setIsRunning] = useState(false);
 
-  const currentProblem = PROBLEMS[currentProblemId];
+  // Initialize code when problem loads
+  useEffect(() => {
+    if (currentProblem) {
+      setCode(currentProblem.starterCode[selectedLanguage] || "");
+    }
+  }, [currentProblem, selectedLanguage]);
 
   // update problem when URL param changes
   useEffect(() => {
-    if (id && PROBLEMS[id]) {
+    if (id && problems.length > 0) {
       setCurrentProblemId(id);
-      setCode(PROBLEMS[id].starterCode[selectedLanguage]);
       setOutput(null);
     }
-  }, [id, selectedLanguage]);
+  }, [id, problems]);
 
   const handleLanguageChange = (e) => {
     const newLang = e.target.value;
@@ -57,7 +69,7 @@ function ProblemPage() {
   };
 
   const normalizeOutput = (output) => {
-    // normalize output for comparison (trim whitespace, handle different spacing)
+    // normalize output for comparison (trim whitespace, handle different spacing, and normalize quotes)
     return output
       .trim()
       .split("\n")
@@ -69,6 +81,8 @@ function ProblemPage() {
           .replace(/\s+\]/g, "]")
           // normalize spaces around commas to single space after comma
           .replace(/\s*,\s*/g, ",")
+          // normalize single quotes to double quotes
+          .replace(/'/g, '"')
       )
       .filter((line) => line.length > 0)
       .join("\n");
@@ -94,6 +108,11 @@ function ProblemPage() {
     if (result.success) {
       const expectedOutput = currentProblem.expectedOutput[selectedLanguage];
       const testsPassed = checkIfTestsPassed(result.output, expectedOutput);
+      
+      // Update result with test status
+      result.isCorrect = testsPassed;
+      result.expectedOutput = expectedOutput;
+      setOutput({...result});
 
       if (testsPassed) {
         triggerConfetti();
@@ -106,19 +125,20 @@ function ProblemPage() {
     }
   };
 
-  return (
-    <div className="h-screen bg-base-100 flex flex-col">
-      <Navbar />
+  if (isLoading) return <div className="min-h-screen flex items-center justify-center"><Loader2Icon className="animate-spin size-8" /></div>;
+  if (!currentProblem) return <div className="min-h-screen flex items-center justify-center">Problem not found</div>;
 
-      <div className="flex-1">
+  return (
+    <div className="min-h-screen bg-base-200 flex flex-col">
+      <Navbar />
+      <div className="flex-1 overflow-hidden">
         <PanelGroup direction="horizontal">
-          {/* left panel- problem desc */}
-          <Panel defaultSize={40} minSize={30}>
+          <Panel defaultSize={50} minSize={30}>
             <ProblemDescription
               problem={currentProblem}
               currentProblemId={currentProblemId}
               onProblemChange={handleProblemChange}
-              allProblems={Object.values(PROBLEMS)}
+              allProblems={problems}
             />
           </Panel>
 
@@ -144,7 +164,7 @@ function ProblemPage() {
               {/* Bottom panel - Output Panel*/}
 
               <Panel defaultSize={30} minSize={30}>
-                <OutputPanel output={output} />
+                <OutputPanel output={output} testcases={currentProblem.examples} />
               </Panel>
             </PanelGroup>
           </Panel>

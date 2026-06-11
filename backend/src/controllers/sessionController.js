@@ -1,9 +1,11 @@
 import { chatClient, streamClient } from "../lib/stream.js";
 import Session from "../models/Session.js";
+import { inngest } from "../lib/inngest.js";
+import nodemailer from "nodemailer";
 
 export async function createSession(req, res) {
   try {
-    const { problem, difficulty, candidateName, candidateEmail } = req.body;
+    const { problem, difficulty, candidateName, candidateEmail, scheduledAt } = req.body;
     const userId = req.user._id;
     const clerkId = req.user.clerkId;
 
@@ -21,8 +23,66 @@ export async function createSession(req, res) {
       candidateName,
       candidateEmail,
       host: userId, 
-      callId 
+      callId,
+      status: scheduledAt ? "scheduled" : "active",
+      scheduledAt: scheduledAt || null
     });
+
+    const inviteLink = `${process.env.CLIENT_URL}/session/${session._id.toString()}`;
+    const scheduledText = scheduledAt ? `The interview is scheduled for ${new Date(scheduledAt).toLocaleString()}.` : `The interview is ready to start right now.`;
+    let transporter;
+
+    if (process.env.SMTP_USER && process.env.SMTP_PASS) {
+      transporter = nodemailer.createTransport({
+        service: "gmail",
+        auth: {
+          user: process.env.SMTP_USER,
+          pass: process.env.SMTP_PASS,
+        },
+      });
+    } else {
+      const testAccount = await nodemailer.createTestAccount();
+      transporter = nodemailer.createTransport({
+        host: "smtp.ethereal.email",
+        port: 587,
+        secure: false,
+        auth: { user: testAccount.user, pass: testAccount.pass },
+      });
+    }
+
+    await transporter.sendMail({
+      from: '"InterviewVerse" <no-reply@interviewverse.com>',
+      to: candidateEmail,
+      subject: `Interview Invitation: ${problem} with ${req.user.name}`,
+      text: `Hello ${candidateName},\n\nYou have been invited to an interview for the problem: ${problem}.\n${scheduledText}\n\nPlease join the room using this link: ${inviteLink}\n\nGood luck!\nInterviewVerse Team`,
+      html: `
+        <div style="font-family: Arial, sans-serif; max-w-md; margin: 0 auto; padding: 20px;">
+          <h2>Interview Invitation 🚀</h2>
+          <p>Hello <strong>${candidateName}</strong>,</p>
+          <p>You have been invited to an interview for the problem: <strong>${problem}</strong>.</p>
+          <p><strong>Time:</strong> ${scheduledAt ? new Date(scheduledAt).toLocaleString() : "Right Now"}</p>
+          <p><strong>Interviewer:</strong> ${req.user.name}</p>
+          <div style="margin-top: 20px;">
+            <a href="${inviteLink}" style="background-color: #2563eb; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Join Interview Room</a>
+          </div>
+        </div>
+      `,
+    });
+
+    if (scheduledAt) {
+      // Schedule the room activation via Inngest
+      await inngest.send({
+        name: "session/scheduled",
+        data: {
+          sessionId: session._id.toString(),
+          scheduledAt,
+          candidateName,
+          candidateEmail,
+          hostName: req.user.name,
+          problem
+        }
+      });
+    }
 
     // create stream video call
     await streamClient.video.call("default", callId).getOrCreate({
@@ -53,7 +113,7 @@ export async function getActiveSessions(req, res) {
     const userId = req.user._id;
 
     const sessions = await Session.find({ 
-      status: "active",
+      status: { $in: ["active", "scheduled"] },
       $or: [{ host: userId }, { participant: userId }, { candidateEmail: req.user.email }]
     })
       .populate("host", "name profileImage email clerkId")
@@ -117,9 +177,13 @@ export async function joinSession(req, res) {
 
     if (!session) return res.status(404).json({ message: "Session not found" });
 
-    if (session.status !== "active") {
+    if (session.status !== "active" && session.status !== "scheduled") {
       return res.status(400).json({ message: "Cannot join a completed session" });
     }
+
+    // Wait! If it's scheduled, the host shouldn't join as participant anyway.
+    // If a candidate tries to join a scheduled session, the frontend will block them until it's active.
+    // We can allow them to "join" but the frontend displays a waiting room.
 
     if (session.host.toString() === userId.toString()) {
       return res.status(400).json({ message: "Host cannot join their own session as participant" });

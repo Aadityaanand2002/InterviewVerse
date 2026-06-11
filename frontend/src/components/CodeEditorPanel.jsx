@@ -9,7 +9,18 @@ function CodeEditorPanel({
   onLanguageChange,
   onCodeChange,
   onRunCode,
+  onCheatAlert,
 }) {
+  const handleEditorMount = (editor, monaco) => {
+    editor.onDidPaste((e) => {
+      const pastedText = editor.getModel().getValueInRange(e.range);
+      if (pastedText.length > 50) {
+        if (onCheatAlert) {
+          onCheatAlert("large_paste");
+        }
+      }
+    });
+  };
   return (
     <div className="h-full bg-base-300 flex flex-col">
       <div className="flex items-center justify-between px-4 py-3 bg-base-100 border-t border-base-300">
@@ -49,6 +60,7 @@ function CodeEditorPanel({
           language={LANGUAGE_CONFIG[selectedLanguage].monacoLang}
           value={code}
           onChange={onCodeChange}
+          onMount={handleEditorMount}
           theme="vs-dark"
           options={{
             fontSize: 16,
