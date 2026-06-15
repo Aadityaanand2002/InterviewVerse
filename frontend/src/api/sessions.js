@@ -52,4 +52,16 @@ export const sessionApi = {
     const response = await axiosInstance.post(`/sessions/${id}/deny`);
     return response.data;
   },
+  updateSessionScore: async (id, data) => {
+    const response = await axiosInstance.put(`/sessions/${id}/score`, data);
+    return response.data;
+  },
+  addTimelineEvent: async (id, data) => {
+    const response = await axiosInstance.post(`/sessions/${id}/timeline`, data);
+    return response.data;
+  },
+  addCodeSnapshot: async (id, data) => {
+    const response = await axiosInstance.post(`/sessions/${id}/snapshot`, data);
+    return response.data;
+  },
 };

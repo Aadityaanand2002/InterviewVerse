@@ -29,6 +29,14 @@ const sessionSchema = new mongoose.Schema(
       ref: "User",
       default: null,
     },
+    participants: [{
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+    }],
+    maxParticipants: {
+      type: Number,
+      default: 2, // 2 = 1-on-1, 5 = Panel
+    },
     waitingParticipant: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
@@ -52,6 +60,36 @@ const sessionSchema = new mongoose.Schema(
       type: String,
       default: "",
     },
+    // Scoring
+    metrics: {
+      communication: { type: Number, min: 1, max: 10, default: null },
+      codeQuality: { type: Number, min: 1, max: 10, default: null },
+      logic: { type: Number, min: 1, max: 10, default: null },
+    },
+    timeline: [{
+      type: { type: String, required: true }, // e.g., 'TAB_SWITCH', 'LARGE_PASTE', 'SYSTEM'
+      timestamp: { type: Date, default: Date.now },
+      message: { type: String, required: true },
+    }],
+    startedAt: {
+      type: Date,
+      default: null,
+    },
+    overallRating: {
+      type: String,
+      enum: ["Strong Hire", "Hire", "No Hire", "Strong No Hire", ""],
+      default: "",
+    },
+    sharedWithCandidate: {
+      type: Boolean,
+      default: false,
+    },
+    codeSnapshots: [{
+      code: { type: String, required: true },
+      language: { type: String, required: true },
+      timestamp: { type: Date, default: Date.now },
+      output: { type: String, default: "" }, // Optional: Can store execution output too
+    }],
     finalCode: {
       type: String,
       default: "",

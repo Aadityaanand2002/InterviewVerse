@@ -9,9 +9,12 @@ import {
   joinSession,
   updateSessionProblem,
   updateSessionNotes,
+  updateSessionScore,
   askToJoin,
   admitParticipant,
   denyParticipant,
+  addTimelineEvent,
+  addCodeSnapshot,
 } from "../controllers/sessionController.js";
 
 const router = express.Router();
@@ -30,5 +33,9 @@ router.post("/:id/deny", protectRoute, denyParticipant);
 
 router.put("/:id/problem", protectRoute, updateSessionProblem);
 router.put("/:id/notes", protectRoute, updateSessionNotes);
+router.put("/:id/score", protectRoute, updateSessionScore);
+
+router.post("/:id/timeline", protectRoute, addTimelineEvent);
+router.post("/:id/snapshot", protectRoute, addCodeSnapshot);
 
 export default router;
