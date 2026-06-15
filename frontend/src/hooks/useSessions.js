@@ -146,3 +146,47 @@ export const useDenyParticipant = () => {
 
   return result;
 };
+
+export const useUpdateSessionScore = () => {
+  const queryClient = useQueryClient();
+  const result = useMutation({
+    mutationKey: ["updateSessionScore"],
+    mutationFn: ({ id, data }) => sessionApi.updateSessionScore(id, data),
+    onSuccess: () => {
+      toast.success("Score saved!");
+      queryClient.invalidateQueries({ queryKey: ["session"] });
+    },
+    onError: (error) => toast.error(error.response?.data?.message || "Failed to save score"),
+  });
+
+  return result;
+};
+
+export const useAddTimelineEvent = () => {
+  const queryClient = useQueryClient();
+  const result = useMutation({
+    mutationKey: ["addTimelineEvent"],
+    mutationFn: ({ id, data }) => sessionApi.addTimelineEvent(id, data),
+    onSuccess: () => {
+      // Opt not to show toast to avoid spamming the user during tab switches
+      queryClient.invalidateQueries({ queryKey: ["session"] });
+    },
+    onError: (error) => console.error(error.response?.data?.message || "Failed to add timeline event"),
+  });
+
+  return result;
+};
+
+export const useAddCodeSnapshot = () => {
+  const queryClient = useQueryClient();
+  const result = useMutation({
+    mutationKey: ["addCodeSnapshot"],
+    mutationFn: ({ id, data }) => sessionApi.addCodeSnapshot(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["session"] });
+    },
+    onError: (error) => console.error(error.response?.data?.message || "Failed to add code snapshot"),
+  });
+
+  return result;
+};

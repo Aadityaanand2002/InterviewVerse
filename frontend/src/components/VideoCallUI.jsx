@@ -10,23 +10,88 @@ import {
   ScreenShareButton,
   CancelCallButton,
   DeviceSettings,
+  ReactionsButton,
+  useCall,
+  useConnectedUser,
 } from "@stream-io/video-react-sdk";
-import { Loader2Icon, MessageSquareIcon, UsersIcon, XIcon, LayoutGridIcon, SettingsIcon } from "lucide-react";
-import { useState } from "react";
+import { Loader2Icon, MessageSquareIcon, UsersIcon, XIcon, LayoutGridIcon, HandIcon } from "lucide-react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router";
 import { Channel, Chat, MessageInput, MessageList, Thread, Window } from "stream-chat-react";
+import toast from "react-hot-toast";
 
 import "@stream-io/video-react-sdk/dist/css/styles.css";
 import "stream-chat-react/dist/css/v2/index.css";
 
 function VideoCallUI({ chatClient, channel }) {
   const navigate = useNavigate();
-  const { useCallCallingState, useParticipantCount } = useCallStateHooks();
+  const { useCallCallingState, useParticipantCount, useParticipants } = useCallStateHooks();
   const callingState = useCallCallingState();
   const participantCount = useParticipantCount();
+  const participants = useParticipants();
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [showParticipants, setShowParticipants] = useState(false);
   const [layout, setLayout] = useState("speaker");
+
+  // Hand Raise Feature State
+  const call = useCall();
+  const connectedUser = useConnectedUser();
+  const [raisedHands, setRaisedHands] = useState(new Set());
+  const isHandRaised = raisedHands.has(connectedUser?.id);
+
+  useEffect(() => {
+    if (!call) return;
+
+    const unsubscribe = call.on("custom", (event) => {
+      const { custom, user } = event;
+      if (custom.type === "raise_hand") {
+        setRaisedHands((prev) => {
+          const newSet = new Set(prev);
+          newSet.add(user.id);
+          return newSet;
+        });
+        toast(`${user.name} raised their hand!`, {
+          icon: "✋",
+          style: { background: "rgba(139, 92, 246, 0.2)", color: "#c4b5fd", border: "1px solid rgba(139, 92, 246, 0.3)" }
+        });
+      } else if (custom.type === "lower_hand") {
+        setRaisedHands((prev) => {
+          const newSet = new Set(prev);
+          newSet.delete(user.id);
+          return newSet;
+        });
+      }
+    });
+
+    return () => unsubscribe();
+  }, [call]);
+
+  const handleToggleHandRaise = async () => {
+    if (!call || !connectedUser) return;
+    
+    const eventType = isHandRaised ? "lower_hand" : "raise_hand";
+    
+    // Optimistic update
+    setRaisedHands((prev) => {
+      const newSet = new Set(prev);
+      if (isHandRaised) newSet.delete(connectedUser.id);
+      else newSet.add(connectedUser.id);
+      return newSet;
+    });
+
+    try {
+      await call.sendCustomEvent({ type: eventType });
+    } catch (error) {
+      console.error("Failed to send hand raise event", error);
+      // Revert optimistic update
+      setRaisedHands((prev) => {
+        const newSet = new Set(prev);
+        if (isHandRaised) newSet.add(connectedUser.id);
+        else newSet.delete(connectedUser.id);
+        return newSet;
+      });
+    }
+  };
 
   if (callingState === CallingState.JOINING) {
     return (
@@ -53,6 +118,12 @@ function VideoCallUI({ chatClient, channel }) {
               <span className="font-semibold">
                 {participantCount} {participantCount === 1 ? "participant" : "participants"}
               </span>
+              {raisedHands.size > 0 && (
+                <div className="ml-2 px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-400 text-xs font-bold flex items-center gap-1">
+                  <HandIcon className="w-3 h-3 fill-amber-400" />
+                  {raisedHands.size}
+                </div>
+              )}
             </button>
           </div>
           
@@ -65,17 +136,6 @@ function VideoCallUI({ chatClient, channel }) {
               <LayoutGridIcon className="w-4 h-4" />
               {layout === "speaker" ? "Grid View" : "Speaker View"}
             </button>
-            <div className="divider divider-horizontal m-0"></div>
-            {chatClient && channel && (
-              <button
-                onClick={() => setIsChatOpen(!isChatOpen)}
-                className={`btn btn-sm gap-2 ${isChatOpen ? "btn-primary" : "btn-ghost"}`}
-                title={isChatOpen ? "Hide chat" : "Show chat"}
-              >
-                <MessageSquareIcon className="size-4" />
-                Chat
-              </button>
-            )}
           </div>
         </div>
 
@@ -95,11 +155,28 @@ function VideoCallUI({ chatClient, channel }) {
           
           <div className="flex items-center gap-2">
             <ScreenShareButton />
+            <ReactionsButton />
+            <button
+              onClick={handleToggleHandRaise}
+              className={`btn btn-circle btn-sm ${isHandRaised ? "bg-amber-500/20 text-amber-400 hover:bg-amber-500/30 border-amber-500/30" : "btn-ghost text-base-content/70"}`}
+              title={isHandRaised ? "Lower Hand" : "Raise Hand"}
+            >
+              <HandIcon className={`size-5 ${isHandRaised ? "fill-amber-400" : ""}`} />
+            </button>
           </div>
 
           <div className="divider divider-horizontal m-0"></div>
 
           <div className="flex items-center gap-2">
+            {chatClient && channel && (
+              <button
+                onClick={() => setIsChatOpen(!isChatOpen)}
+                className={`btn btn-circle btn-sm ${isChatOpen ? "bg-primary/20 text-primary hover:bg-primary/30 border-primary/30" : "btn-ghost text-base-content/70"}`}
+                title={isChatOpen ? "Hide chat" : "Show chat"}
+              >
+                <MessageSquareIcon className="size-5" />
+              </button>
+            )}
             <DeviceSettings />
             <CancelCallButton onLeave={() => navigate("/dashboard")} />
           </div>
@@ -119,7 +196,31 @@ function VideoCallUI({ chatClient, channel }) {
               <XIcon className="size-5" />
             </button>
           </div>
-          <div className="flex-1 overflow-auto p-4">
+          <div className="flex-1 overflow-auto p-4 flex flex-col gap-4">
+            {/* Raised Hands Queue */}
+            {raisedHands.size > 0 && (
+              <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-3 flex flex-col gap-2">
+                <h4 className="text-xs font-bold text-amber-400 uppercase tracking-wider flex items-center gap-1">
+                  <HandIcon className="w-3 h-3 fill-amber-400" />
+                  Raised Hands ({raisedHands.size})
+                </h4>
+                <div className="flex flex-col gap-2 mt-1">
+                  {participants
+                    .filter((p) => raisedHands.has(p.userId))
+                    .map((p) => (
+                      <div key={p.userId} className="flex items-center gap-2 text-sm text-amber-100">
+                        <img 
+                          src={p.image || `https://ui-avatars.com/api/?name=${encodeURIComponent(p.name || 'User')}`} 
+                          alt={p.name} 
+                          className="w-6 h-6 rounded-full border border-amber-500/30"
+                        />
+                        <span className="truncate">{p.name || p.userId}</span>
+                      </div>
+                    ))}
+                </div>
+              </div>
+            )}
+            
             <CallParticipantsList onClose={() => setShowParticipants(false)} />
           </div>
         </div>

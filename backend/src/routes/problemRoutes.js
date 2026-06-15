@@ -1,5 +1,6 @@
 import express from "express";
 import { protectRoute } from "../middleware/protectRoute.js";
+import { requireAdmin } from "../middleware/adminMiddleware.js";
 import { getProblems, getProblemById, createProblem, updateProblem, deleteProblem } from "../controllers/problemController.js";
 
 const router = express.Router();
@@ -8,9 +9,9 @@ const router = express.Router();
 router.get("/", getProblems);
 router.get("/:id", getProblemById);
 
-// Admin routes (basic protection, can be extended to check roles later)
-router.post("/", protectRoute, createProblem);
-router.put("/:id", protectRoute, updateProblem);
-router.delete("/:id", protectRoute, deleteProblem);
+// Admin-only routes — must be authenticated AND have role === "admin"
+router.post("/", protectRoute, requireAdmin, createProblem);
+router.put("/:id", protectRoute, requireAdmin, updateProblem);
+router.delete("/:id", protectRoute, requireAdmin, deleteProblem);
 
 export default router;

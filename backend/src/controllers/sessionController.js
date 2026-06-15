@@ -5,7 +5,7 @@ import nodemailer from "nodemailer";
 
 export async function createSession(req, res) {
   try {
-    const { problem, difficulty, candidateName, candidateEmail, scheduledAt } = req.body;
+    const { problem, difficulty, candidateName, candidateEmail, scheduledAt, maxParticipants } = req.body;
     const userId = req.user._id;
     const clerkId = req.user.clerkId;
 
@@ -25,86 +25,95 @@ export async function createSession(req, res) {
       host: userId, 
       callId,
       status: scheduledAt ? "scheduled" : "active",
-      scheduledAt: scheduledAt || null
+      scheduledAt: scheduledAt || null,
+      startedAt: scheduledAt ? null : new Date(),
+      maxParticipants: maxParticipants || 2
     });
 
     const inviteLink = `${process.env.CLIENT_URL}/session/${session._id.toString()}`;
     const scheduledText = scheduledAt ? `The interview is scheduled for ${new Date(scheduledAt).toLocaleString()}.` : `The interview is ready to start right now.`;
-    let transporter;
+    try {
+      let transporter;
+      if (process.env.SMTP_USER && process.env.SMTP_PASS) {
+        transporter = nodemailer.createTransport({
+          service: "gmail",
+          auth: {
+            user: process.env.SMTP_USER,
+            pass: process.env.SMTP_PASS,
+          },
+        });
+      } else {
+        const testAccount = await nodemailer.createTestAccount();
+        transporter = nodemailer.createTransport({
+          host: "smtp.ethereal.email",
+          port: 587,
+          secure: false,
+          auth: { user: testAccount.user, pass: testAccount.pass },
+        });
+      }
 
-    if (process.env.SMTP_USER && process.env.SMTP_PASS) {
-      transporter = nodemailer.createTransport({
-        service: "gmail",
-        auth: {
-          user: process.env.SMTP_USER,
-          pass: process.env.SMTP_PASS,
-        },
-      });
-    } else {
-      const testAccount = await nodemailer.createTestAccount();
-      transporter = nodemailer.createTransport({
-        host: "smtp.ethereal.email",
-        port: 587,
-        secure: false,
-        auth: { user: testAccount.user, pass: testAccount.pass },
-      });
-    }
-
-    await transporter.sendMail({
-      from: '"InterviewVerse" <no-reply@interviewverse.com>',
-      to: candidateEmail,
-      subject: `Interview Invitation: ${problem} with ${req.user.name}`,
-      text: `Hello ${candidateName},\n\nYou have been invited to an interview for the problem: ${problem}.\n${scheduledText}\n\nPlease join the room using this link: ${inviteLink}\n\nGood luck!\nInterviewVerse Team`,
-      html: `
-        <div style="font-family: Arial, sans-serif; max-w-md; margin: 0 auto; padding: 20px;">
-          <h2>Interview Invitation 🚀</h2>
-          <p>Hello <strong>${candidateName}</strong>,</p>
-          <p>You have been invited to an interview for the problem: <strong>${problem}</strong>.</p>
-          <p><strong>Time:</strong> ${scheduledAt ? new Date(scheduledAt).toLocaleString() : "Right Now"}</p>
-          <p><strong>Interviewer:</strong> ${req.user.name}</p>
-          <div style="margin-top: 20px;">
-            <a href="${inviteLink}" style="background-color: #2563eb; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Join Interview Room</a>
+      await transporter.sendMail({
+        from: '"InterviewVerse" <no-reply@interviewverse.com>',
+        to: candidateEmail,
+        subject: `Interview Invitation: ${problem} with ${req.user.name}`,
+        text: `Hello ${candidateName},\n\nYou have been invited to an interview for the problem: ${problem}.\n${scheduledText}\n\nPlease join the room using this link: ${inviteLink}\n\nGood luck!\nInterviewVerse Team`,
+        html: `
+          <div style="font-family: Arial, sans-serif; max-w-md; margin: 0 auto; padding: 20px;">
+            <h2>Interview Invitation 🚀</h2>
+            <p>Hello <strong>${candidateName}</strong>,</p>
+            <p>You have been invited to an interview for the problem: <strong>${problem}</strong>.</p>
+            <p><strong>Time:</strong> ${scheduledAt ? new Date(scheduledAt).toLocaleString() : "Right Now"}</p>
+            <p><strong>Interviewer:</strong> ${req.user.name}</p>
+            <div style="margin-top: 20px;">
+              <a href="${inviteLink}" style="background-color: #2563eb; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Join Interview Room</a>
+            </div>
           </div>
-        </div>
-      `,
-    });
+        `,
+      });
+    } catch (emailError) {
+      console.error("Failed to send invitation email:", emailError.message);
+    }
 
     if (scheduledAt) {
-      // Schedule the room activation via Inngest
-      await inngest.send({
-        name: "session/scheduled",
-        data: {
-          sessionId: session._id.toString(),
-          scheduledAt,
-          candidateName,
-          candidateEmail,
-          hostName: req.user.name,
-          problem
-        }
-      });
+      try {
+        await inngest.send({
+          name: "session/scheduled",
+          data: {
+            sessionId: session._id.toString(),
+            scheduledAt,
+            candidateName,
+            candidateEmail,
+            hostName: req.user.name,
+            problem
+          }
+        });
+      } catch (inngestError) {
+        console.error("Failed to schedule via Inngest:", inngestError.message);
+      }
     }
 
-    // create stream video call
-    await streamClient.video.call("default", callId).getOrCreate({
-      data: {
+    try {
+      await streamClient.video.call("default", callId).getOrCreate({
+        data: {
+          created_by_id: clerkId,
+          custom: { problem, difficulty, sessionId: session._id.toString() },
+        },
+      });
+
+      const channel = chatClient.channel("messaging", callId, {
+        name: `${problem} Session`,
         created_by_id: clerkId,
-        custom: { problem, difficulty, sessionId: session._id.toString() },
-      },
-    });
-
-    // chat messaging
-    const channel = chatClient.channel("messaging", callId, {
-      name: `${problem} Session`,
-      created_by_id: clerkId,
-      members: [clerkId],
-    });
-
-    await channel.create();
+        members: [clerkId],
+      });
+      await channel.create();
+    } catch (streamError) {
+      console.error("Failed to initialize Stream services:", streamError.message);
+    }
 
     res.status(201).json({ session });
   } catch (error) {
-    console.log("Error in createSession controller:", error.message);
-    res.status(500).json({ message: "Internal Server Error" });
+    console.error("Error in createSession controller:", error);
+    res.status(500).json({ message: "Internal Server Error", error: error.message });
   }
 }
 
@@ -114,10 +123,11 @@ export async function getActiveSessions(req, res) {
 
     const sessions = await Session.find({ 
       status: { $in: ["active", "scheduled"] },
-      $or: [{ host: userId }, { participant: userId }, { candidateEmail: req.user.email }]
+      $or: [{ host: userId }, { participant: userId }, { participants: userId }, { candidateEmail: req.user.email }]
     })
       .populate("host", "name profileImage email clerkId")
       .populate("participant", "name profileImage email clerkId")
+      .populate("participants", "name profileImage email clerkId")
       .sort({ createdAt: -1 })
       .limit(20);
 
@@ -135,10 +145,11 @@ export async function getMyRecentSessions(req, res) {
     // get sessions where user is either host or participant
     const sessions = await Session.find({
       status: "completed",
-      $or: [{ host: userId }, { participant: userId }, { candidateEmail: req.user.email }],
+      $or: [{ host: userId }, { participant: userId }, { participants: userId }, { candidateEmail: req.user.email }],
     })
       .populate("host", "name profileImage email clerkId")
       .populate("participant", "name profileImage email clerkId")
+      .populate("participants", "name profileImage email clerkId")
       .sort({ createdAt: -1 })
       .limit(20);
 
@@ -156,6 +167,7 @@ export async function getSessionById(req, res) {
     const session = await Session.findById(id)
       .populate("host", "name email profileImage clerkId")
       .populate("participant", "name email profileImage clerkId")
+      .populate("participants", "name email profileImage clerkId")
       .populate("waitingParticipant", "name email profileImage clerkId");
 
     if (!session) return res.status(404).json({ message: "Session not found" });
@@ -189,10 +201,17 @@ export async function joinSession(req, res) {
       return res.status(400).json({ message: "Host cannot join their own session as participant" });
     }
 
-    // check if session is already full - has a participant
-    if (session.participant) return res.status(409).json({ message: "Session is full" });
+    // check if session is already full
+    if ((session.participants?.length || 0) + 1 >= (session.maxParticipants || 2)) {
+      return res.status(409).json({ message: "Session is full" });
+    }
 
-    session.participant = userId;
+    if (!session.participant) {
+      session.participant = userId;
+    }
+    if (!session.participants.includes(userId)) {
+      session.participants.push(userId);
+    }
     await session.save();
 
     const channel = chatClient.channel("messaging", session.callId);
@@ -388,6 +407,80 @@ export async function denyParticipant(req, res) {
     res.status(200).json({ session, message: "Participant denied" });
   } catch (error) {
     console.log("Error in denyParticipant controller:", error.message);
+    res.status(500).json({ message: "Internal Server Error" });
+  }
+}
+
+export async function updateSessionScore(req, res) {
+  try {
+    const { id } = req.params;
+    const { candidateScore, metrics, overallRating, sharedWithCandidate } = req.body;
+    const userId = req.user._id;
+
+    const session = await Session.findById(id);
+
+    if (!session) return res.status(404).json({ message: "Session not found" });
+
+    if (session.host.toString() !== userId.toString()) {
+      return res.status(403).json({ message: "Only the host can score the session" });
+    }
+
+    if (metrics !== undefined) session.metrics = { ...session.metrics, ...metrics };
+    if (candidateScore !== undefined) session.metrics.communication = candidateScore; // Fallback or backward compat
+    if (overallRating !== undefined) session.overallRating = overallRating;
+    if (sharedWithCandidate !== undefined) session.sharedWithCandidate = sharedWithCandidate;
+
+    await session.save();
+
+    res.status(200).json({ session, message: "Score updated successfully" });
+  } catch (error) {
+    console.log("Error in updateSessionScore controller:", error.message);
+    res.status(500).json({ message: "Internal Server Error" });
+  }
+}
+
+export async function addTimelineEvent(req, res) {
+  try {
+    const { id } = req.params;
+    const { type, message } = req.body;
+    
+    if (!type || !message) {
+      return res.status(400).json({ message: "Type and message are required" });
+    }
+
+    const session = await Session.findById(id);
+
+    if (!session) return res.status(404).json({ message: "Session not found" });
+
+    session.timeline.push({ type, message });
+    await session.save();
+
+    res.status(200).json({ message: "Timeline event added successfully", timeline: session.timeline });
+  } catch (error) {
+    console.log("Error in addTimelineEvent controller:", error.message);
+    res.status(500).json({ message: "Internal Server Error" });
+  }
+}
+
+export async function addCodeSnapshot(req, res) {
+  try {
+    const { id } = req.params;
+    const { code, language, output } = req.body;
+    
+    if (!code || !language) {
+      return res.status(400).json({ message: "Code and language are required" });
+    }
+
+    const session = await Session.findById(id);
+
+    if (!session) return res.status(404).json({ message: "Session not found" });
+
+    session.codeSnapshots.push({ code, language, output });
+    await session.save();
+
+    res.status(200).json({ message: "Code snapshot added successfully" });
+  } catch (error) {
+    console.log("Error in addCodeSnapshot controller:", error.message);
     res.status(500).json({ message: "Internal Server Error" });
   }
 }

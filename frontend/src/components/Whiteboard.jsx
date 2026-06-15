@@ -3,7 +3,11 @@ import "tldraw/tldraw.css";
 import { useYjsStore } from "../hooks/useYjsStore";
 
 function Whiteboard({ roomId }) {
-  const storeWithStatus = useYjsStore({ roomId: `session-${roomId}` });
+  const yjsUrl = import.meta.env.VITE_YJS_URL || "wss://demos.yjs.dev/ws";
+  const storeWithStatus = useYjsStore({ 
+    roomId: `session-${roomId}`,
+    hostUrl: yjsUrl,
+  });
 
   return (
     <div style={{ position: 'absolute', inset: 0, zIndex: 10 }}>

@@ -56,15 +56,10 @@ function ProblemPage() {
 
   const triggerConfetti = () => {
     confetti({
-      particleCount: 80,
-      spread: 250,
-      origin: { x: 0.2, y: 0.6 },
-    });
-
-    confetti({
-      particleCount: 80,
-      spread: 250,
-      origin: { x: 0.8, y: 0.6 },
+      particleCount: 100,
+      spread: 70,
+      origin: { y: 0.6 },
+      colors: ['#8b5cf6', '#06b6d4', '#10b981', '#f43f5e']
     });
   };
 
@@ -104,7 +99,6 @@ function ProblemPage() {
     setIsRunning(false);
 
     // check if code executed successfully and matches expected output
-
     if (result.success) {
       const expectedOutput = currentProblem.expectedOutput[selectedLanguage];
       const testsPassed = checkIfTestsPassed(result.output, expectedOutput);
@@ -116,22 +110,43 @@ function ProblemPage() {
 
       if (testsPassed) {
         triggerConfetti();
-        toast.success("All tests passed! Great job!");
+        toast.success("All tests passed! Great job!", {
+          icon: '🎉',
+          style: {
+            borderRadius: '10px',
+            background: '#10b981',
+            color: '#fff',
+          },
+        });
       } else {
-        toast.error("Tests failed. Check your output!");
+        toast.error("Tests failed. Check your output!", {
+          style: {
+            borderRadius: '10px',
+            background: '#f43f5e',
+            color: '#fff',
+          },
+        });
       }
     } else {
-      toast.error("Code execution failed!");
+      toast.error("Code execution failed!", {
+        style: {
+          borderRadius: '10px',
+          background: '#f43f5e',
+          color: '#fff',
+        },
+      });
     }
   };
 
-  if (isLoading) return <div className="min-h-screen flex items-center justify-center"><Loader2Icon className="animate-spin size-8" /></div>;
-  if (!currentProblem) return <div className="min-h-screen flex items-center justify-center">Problem not found</div>;
+  if (isLoading) return <div className="min-h-screen bg-mesh flex items-center justify-center"><Loader2Icon className="animate-spin size-10 text-violet-400" /></div>;
+  if (!currentProblem) return <div className="min-h-screen bg-mesh flex items-center justify-center text-lg font-bold">Problem not found</div>;
 
   return (
-    <div className="min-h-screen bg-base-200 flex flex-col">
+    <div className="h-screen bg-mesh flex flex-col overflow-hidden text-base-content relative">
+      <div className="fixed inset-0 grid-pattern pointer-events-none opacity-30" />
       <Navbar />
-      <div className="flex-1 overflow-hidden">
+      
+      <main className="flex-1 overflow-hidden p-2 relative z-10">
         <PanelGroup direction="horizontal">
           <Panel defaultSize={50} minSize={30}>
             <ProblemDescription
@@ -142,34 +157,42 @@ function ProblemPage() {
             />
           </Panel>
 
-          <PanelResizeHandle className="w-2 bg-base-300 hover:bg-primary transition-colors cursor-col-resize" />
+          <PanelResizeHandle className="w-2 mx-1 rounded-full bg-white/5 hover:bg-violet-500/50 transition-colors cursor-col-resize flex items-center justify-center">
+            <div className="h-8 w-1 bg-white/20 rounded-full" />
+          </PanelResizeHandle>
 
           {/* right panel- code editor & output */}
           <Panel defaultSize={60} minSize={30}>
             <PanelGroup direction="vertical">
               {/* Top panel - Code editor */}
               <Panel defaultSize={70} minSize={30}>
-                <CodeEditorPanel
-                  selectedLanguage={selectedLanguage}
-                  code={code}
-                  isRunning={isRunning}
-                  onLanguageChange={handleLanguageChange}
-                  onCodeChange={setCode}
-                  onRunCode={handleRunCode}
-                />
+                <div className="h-full bg-[#0d1117]/80 backdrop-blur-md rounded-2xl border border-white/10 m-2 shadow-xl overflow-hidden relative">
+                  {/* Decorative glow */}
+                  <div className="absolute top-0 right-0 w-64 h-64 bg-violet-500/10 blur-[100px] pointer-events-none" />
+                  
+                  <CodeEditorPanel
+                    selectedLanguage={selectedLanguage}
+                    code={code}
+                    isRunning={isRunning}
+                    onLanguageChange={handleLanguageChange}
+                    onCodeChange={setCode}
+                    onRunCode={handleRunCode}
+                  />
+                </div>
               </Panel>
 
-              <PanelResizeHandle className="h-2 bg-base-300 hover:bg-primary transition-colors cursor-row-resize" />
+              <PanelResizeHandle className="h-2 my-1 rounded-full bg-white/5 hover:bg-cyan-500/50 transition-colors cursor-row-resize flex items-center justify-center">
+                <div className="w-8 h-1 bg-white/20 rounded-full" />
+              </PanelResizeHandle>
 
               {/* Bottom panel - Output Panel*/}
-
               <Panel defaultSize={30} minSize={30}>
                 <OutputPanel output={output} testcases={currentProblem.examples} />
               </Panel>
             </PanelGroup>
           </Panel>
         </PanelGroup>
-      </div>
+      </main>
     </div>
   );
 }

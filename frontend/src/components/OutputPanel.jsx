@@ -1,8 +1,9 @@
 import { useState, useEffect } from "react";
-import { TerminalIcon, CheckCircle2Icon } from "lucide-react";
+import { TerminalIcon, CheckCircle2Icon, PlayCircleIcon, AlertTriangleIcon, CheckIcon, XIcon } from "lucide-react";
 
 function OutputPanel({ output, testcases = [] }) {
   const [activeTab, setActiveTab] = useState("testcases");
+  const [activeTestCaseTab, setActiveTestCaseTab] = useState(0);
 
   // Switch to test result automatically when output comes in
   useEffect(() => {
@@ -12,15 +13,15 @@ function OutputPanel({ output, testcases = [] }) {
   }, [output]);
 
   return (
-    <div className="h-full bg-base-100 flex flex-col rounded-lg overflow-hidden border border-base-300">
+    <div className="h-full bg-[#0d1117]/80 backdrop-blur-md flex flex-col rounded-2xl overflow-hidden border border-white/10 m-2 shadow-2xl">
       {/* TABS */}
-      <div className="flex bg-base-200 px-2 pt-2 border-b border-base-300 shrink-0 gap-2">
+      <div className="flex bg-[#161b22]/80 px-3 pt-3 border-b border-white/5 shrink-0 gap-2">
         <button
           onClick={() => setActiveTab("testcases")}
-          className={`px-4 py-2 rounded-t-md text-sm font-semibold flex items-center gap-2 transition-colors ${
+          className={`px-4 py-2.5 rounded-t-xl text-sm font-bold flex items-center gap-2 transition-all ${
             activeTab === "testcases"
-              ? "bg-base-100 border-t-2 border-t-primary text-base-content"
-              : "text-base-content/60 hover:text-base-content hover:bg-base-300/50"
+              ? "bg-[#0d1117]/80 border-t-2 border-t-emerald-500 text-emerald-400 shadow-[0_-4px_10px_rgba(16,185,129,0.1)]"
+              : "text-base-content/50 hover:text-base-content hover:bg-white/5"
           }`}
         >
           <CheckCircle2Icon className="size-4" />
@@ -28,10 +29,10 @@ function OutputPanel({ output, testcases = [] }) {
         </button>
         <button
           onClick={() => setActiveTab("result")}
-          className={`px-4 py-2 rounded-t-md text-sm font-semibold flex items-center gap-2 transition-colors ${
+          className={`px-4 py-2.5 rounded-t-xl text-sm font-bold flex items-center gap-2 transition-all ${
             activeTab === "result"
-              ? "bg-base-100 border-t-2 border-t-primary text-base-content"
-              : "text-base-content/60 hover:text-base-content hover:bg-base-300/50"
+              ? "bg-[#0d1117]/80 border-t-2 border-t-cyan-500 text-cyan-400 shadow-[0_-4px_10px_rgba(6,182,212,0.1)]"
+              : "text-base-content/50 hover:text-base-content hover:bg-white/5"
           }`}
         >
           <TerminalIcon className="size-4" />
@@ -39,57 +40,123 @@ function OutputPanel({ output, testcases = [] }) {
         </button>
       </div>
 
-      <div className="flex-1 overflow-auto p-4 bg-base-100">
+      <div className="flex-1 min-h-0 overflow-auto flex flex-col custom-scrollbar relative">
+        {/* Background glow */}
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-cyan-500/5 blur-[100px] pointer-events-none" />
+
         {activeTab === "testcases" ? (
-          <div>
+          <div className="flex-1 min-h-0 flex flex-col relative z-10">
             {testcases && testcases.length > 0 ? (
-              <div className="space-y-4">
-                {testcases.map((tc, idx) => (
-                  <div key={idx} className="bg-base-200 p-3 rounded-md">
-                    <p className="text-xs font-semibold text-base-content/60 mb-1">Case {idx + 1}</p>
-                    <pre className="font-mono text-sm">{tc.input}</pre>
+              <>
+                {/* INNER TABS FOR EACH CASE */}
+                <div className="flex gap-2 p-4 pb-0 shrink-0 overflow-x-auto border-b border-white/5 custom-scrollbar">
+                  {testcases.map((tc, idx) => (
+                    <button
+                      key={idx}
+                      onClick={() => setActiveTestCaseTab(idx)}
+                      className={`px-4 py-1.5 rounded-t-lg text-sm font-bold transition-all whitespace-nowrap border-b-2 ${
+                        activeTestCaseTab === idx
+                          ? "bg-white/5 text-emerald-400 border-emerald-500"
+                          : "text-base-content/40 hover:text-base-content/70 hover:bg-white/5 border-transparent"
+                      }`}
+                    >
+                      Case {idx + 1}
+                    </button>
+                  ))}
+                </div>
+                {/* ACTIVE TESTCASE CONTENT */}
+                <div className="p-5 flex-1 min-h-0 overflow-y-auto">
+                  <div className="space-y-5">
+                    {testcases[activeTestCaseTab]?.input?.split('\n').map((line, i) => {
+                      const parts = line.split(' = ');
+                      if (parts.length === 2) {
+                        return (
+                          <div key={i} className="group">
+                            <p className="text-[10px] font-bold text-base-content/40 mb-1.5 uppercase tracking-wider pl-1">{parts[0].trim()} =</p>
+                            <div className="bg-[#161b22] border border-white/5 p-3.5 rounded-xl shadow-inner group-hover:border-emerald-500/20 transition-colors">
+                              <pre className="font-mono text-sm whitespace-pre-wrap text-emerald-200">{parts[1].trim()}</pre>
+                            </div>
+                          </div>
+                        );
+                      } else {
+                        return (
+                          <div key={i} className="group">
+                            <p className="text-[10px] font-bold text-base-content/40 mb-1.5 uppercase tracking-wider pl-1">Input {i + 1}</p>
+                            <div className="bg-[#161b22] border border-white/5 p-3.5 rounded-xl shadow-inner group-hover:border-emerald-500/20 transition-colors">
+                              <pre className="font-mono text-sm whitespace-pre-wrap text-emerald-200">{line}</pre>
+                            </div>
+                          </div>
+                        );
+                      }
+                    })}
                   </div>
-                ))}
-              </div>
+                </div>
+              </>
             ) : (
-              <p className="text-base-content/50 text-sm mt-4 text-center">
-                Refer to the problem description for test cases. (Custom input editing coming soon!)
-              </p>
+              <div className="flex-1 flex flex-col items-center justify-center p-8 text-center">
+                <div className="size-12 rounded-full bg-white/5 flex items-center justify-center mb-3">
+                  <PlayCircleIcon className="size-6 text-base-content/30" />
+                </div>
+                <p className="text-base-content/50 text-sm font-medium">
+                  Refer to the problem description for test cases.<br/>Custom input editing coming soon.
+                </p>
+              </div>
             )}
           </div>
         ) : (
-          <div>
+          <div className="flex-1 relative z-10 p-5">
             {output === null ? (
-              <p className="text-base-content/50 text-sm text-center mt-4">
-                You must run your code first.
-              </p>
+              <div className="flex h-full flex-col items-center justify-center text-center">
+                <div className="size-16 rounded-2xl bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center mb-4 shadow-inner">
+                  <TerminalIcon className="size-8 text-cyan-400" />
+                </div>
+                <p className="text-base-content/50 text-sm font-bold">
+                  Run your code to see the results here.
+                </p>
+              </div>
             ) : (
-              <div>
-                <h3 className={`text-lg font-bold mb-4 ${
-                  !output.success ? "text-error" :
-                  output.isCorrect === false ? "text-error" : 
-                  "text-success"
+              <div className="animate-fade-in">
+                <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border mb-6 ${
+                  !output.success 
+                    ? "bg-rose-500/10 border-rose-500/20 text-rose-400" :
+                  output.isCorrect === false 
+                    ? "bg-rose-500/10 border-rose-500/20 text-rose-400" : 
+                  "bg-emerald-500/10 border-emerald-500/20 text-emerald-400"
                 }`}>
-                  {!output.success ? "Runtime Error" : 
-                   output.isCorrect === false ? "Wrong Answer" : 
-                   "Accepted"}
-                </h3>
+                  {!output.success ? <AlertTriangleIcon className="size-4" /> : 
+                   output.isCorrect === false ? <XIcon className="size-4" /> : 
+                   <CheckIcon className="size-4" />}
+                  <h3 className="text-sm font-bold uppercase tracking-wider">
+                    {!output.success ? "Runtime Error" : 
+                     output.isCorrect === false ? "Wrong Answer" : 
+                     "Accepted"}
+                  </h3>
+                </div>
                 
-                <div className="space-y-4">
+                <div className="space-y-6">
                   <div>
-                    <p className="text-xs font-semibold text-base-content/60 mb-1">Your Output</p>
-                    <div className="bg-base-200 p-3 rounded-md">
-                      <pre className={`font-mono text-sm whitespace-pre-wrap ${output.success ? "text-base-content" : "text-error"}`}>
+                    <p className="text-[10px] font-bold text-base-content/40 mb-1.5 uppercase tracking-wider pl-1">Your Output</p>
+                    <div className="bg-[#161b22] border border-white/5 p-4 rounded-xl shadow-inner relative overflow-hidden">
+                      {output.success && output.isCorrect !== false && (
+                        <div className="absolute top-0 left-0 w-1 h-full bg-emerald-500 opacity-50" />
+                      )}
+                      {(!output.success || output.isCorrect === false) && (
+                        <div className="absolute top-0 left-0 w-1 h-full bg-rose-500 opacity-50" />
+                      )}
+                      <pre className={`font-mono text-sm whitespace-pre-wrap pl-2 ${
+                        output.success ? "text-base-content/90" : "text-rose-400"
+                      }`}>
                         {output.output || output.error || "No output"}
                       </pre>
                     </div>
                   </div>
 
                   {output.isCorrect === false && output.expectedOutput && (
-                    <div>
-                      <p className="text-xs font-semibold text-base-content/60 mb-1">Expected Output</p>
-                      <div className="bg-base-200 p-3 rounded-md">
-                        <pre className="font-mono text-sm whitespace-pre-wrap text-success">
+                    <div className="animate-slide-up">
+                      <p className="text-[10px] font-bold text-base-content/40 mb-1.5 uppercase tracking-wider pl-1">Expected Output</p>
+                      <div className="bg-[#161b22] border border-white/5 p-4 rounded-xl shadow-inner relative overflow-hidden">
+                        <div className="absolute top-0 left-0 w-1 h-full bg-emerald-500 opacity-50" />
+                        <pre className="font-mono text-sm whitespace-pre-wrap text-emerald-300 pl-2">
                           {output.expectedOutput}
                         </pre>
                       </div>

@@ -31,6 +31,9 @@ export const executeCode = async (req, res) => {
     } else if (language === "java") {
       fileName = "Main.java";
       runCommand = `javac ${fileName} && java Main`;
+    } else if (language === "cpp") {
+      fileName = "main.cpp";
+      runCommand = `g++ ${fileName} -o main && ./main`;
     } else {
       return res.status(400).json({ success: false, error: "Unsupported language." });
     }
