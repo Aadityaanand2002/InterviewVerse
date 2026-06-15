@@ -1,4 +1,5 @@
 import axios from "axios";
+import * as cheerio from "cheerio";
 
 export const importFromLeetcode = async (req, res) => {
   try {
@@ -18,6 +19,11 @@ export const importFromLeetcode = async (req, res) => {
           content
           difficulty
           categoryTitle
+          topicTags {
+            name
+          }
+          metaData
+          exampleTestcaseList
           codeSnippets {
             lang
             langSlug
@@ -39,33 +45,103 @@ export const importFromLeetcode = async (req, res) => {
       return res.status(404).json({ success: false, message: "Problem not found on LeetCode" });
     }
 
-    // Map LeetCode data to our schema format
+    // Parse HTML with cheerio to extract description, examples, and constraints
+    let descriptionHtml = '';
+    const constraints = [];
+    const examples = [];
     
-    // Find snippets
-    const jsSnippet = question.codeSnippets?.find(s => s.langSlug === "javascript")?.code || "";
-    const pySnippet = question.codeSnippets?.find(s => s.langSlug === "python" || s.langSlug === "python3")?.code || "";
-    const javaSnippet = question.codeSnippets?.find(s => s.langSlug === "java")?.code || "";
+    if (question.content) {
+      const $ = cheerio.load(question.content);
+      
+      let inDescription = true;
+      $('body').children().each((i, el) => {
+        const text = $(el).text();
+        if (text.includes('Example 1:') || text.includes('Constraints:')) {
+          inDescription = false;
+        }
+        if (inDescription) {
+          descriptionHtml += $.html(el) + '\n';
+        }
+      });
+
+      $('ul').each((i, ul) => {
+        const prev = $(ul).prev('p');
+        if (prev.text().includes('Constraints:')) {
+          $(ul).find('li').each((j, li) => {
+            constraints.push($(li).text().trim());
+          });
+        }
+      });
+
+      $('pre').each((i, pre) => {
+        let text = $(pre).text();
+        let inputMatch = text.match(/Input:\s*(.*?)\n/);
+        let outputMatch = text.match(/Output:\s*(.*?)(?:\n|$)/);
+        let explMatch = text.match(/Explanation:\s*(.*)/s);
+        
+        if (inputMatch && outputMatch) {
+          examples.push({
+            input: inputMatch[1].trim(),
+            output: outputMatch[1].trim(),
+            explanation: explMatch ? explMatch[1].trim() : ""
+          });
+        }
+      });
+    }
+
+    // Generate test cases comment block
+    let testCasesComment = "";
+    try {
+      if (question.metaData && question.exampleTestcaseList) {
+        const metaData = JSON.parse(question.metaData);
+        const paramNames = metaData.params.map(p => p.name);
+        
+        testCasesComment = "\n\n/*\nExample Test Cases:\n";
+        question.exampleTestcaseList.forEach((tc, index) => {
+          testCasesComment += `\nTest ${index + 1}:\n`;
+          const lines = tc.split('\n');
+          lines.forEach((line, i) => {
+            if (i < paramNames.length) {
+              testCasesComment += `${paramNames[i]} = ${line}\n`;
+            }
+          });
+        });
+        testCasesComment += "*/\n";
+      }
+    } catch (e) {
+      console.error("Failed to parse metaData or test cases:", e);
+    }
+
+    // Find snippets and append test cases
+    const jsSnippet = (question.codeSnippets?.find(s => s.langSlug === "javascript")?.code || "") + testCasesComment;
+    const pySnippet = (question.codeSnippets?.find(s => s.langSlug === "python" || s.langSlug === "python3")?.code || "") + testCasesComment;
+    const javaSnippet = (question.codeSnippets?.find(s => s.langSlug === "java")?.code || "") + testCasesComment;
+    const cppSnippet = (question.codeSnippets?.find(s => s.langSlug === "cpp")?.code || "") + testCasesComment;
+
+    const topicTags = question.topicTags?.map(t => t.name).join(" • ") || question.categoryTitle || "Algorithms";
 
     const mappedProblem = {
       title: question.title,
       difficulty: question.difficulty, // "Easy", "Medium", "Hard"
-      category: question.categoryTitle || "Algorithms",
+      category: topicTags,
       description: {
-        text: question.content, // Raw HTML from LeetCode
+        text: descriptionHtml || question.content, // Cleaned HTML or fallback
         notes: ["Imported directly from LeetCode"]
       },
-      examples: [], // LeetCode examples are embedded inside the HTML content, so we leave this empty
-      constraints: [], // Constraints are also embedded in the HTML content
+      examples: examples,
+      constraints: constraints,
       hiddenTestCases: [], // Need manual setup or custom execution environment
       starterCode: {
         javascript: jsSnippet,
         python: pySnippet,
-        java: javaSnippet
+        java: javaSnippet,
+        cpp: cppSnippet
       },
       expectedOutput: {
         javascript: "",
         python: "",
-        java: ""
+        java: "",
+        cpp: ""
       }
     };
 

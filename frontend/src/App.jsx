@@ -9,9 +9,14 @@ import ProblemsPage from "./pages/ProblemsPage";
 import SessionPage from "./pages/SessionPage";
 import ReportPage from "./pages/ReportPage";
 import AdminProblemsPage from "./pages/AdminProblemsPage";
+import CandidateFeedbackPage from "./pages/CandidateFeedbackPage";
+import { useCurrentUser } from "./hooks/useCurrentUser";
 
 function App() {
   const { isSignedIn, isLoaded } = useUser();
+  const { data: currentUser } = useCurrentUser();
+
+  const isAdmin = currentUser?.role === "admin";
 
   // this will get rid of the flickering effect
   if (!isLoaded) return null;
@@ -26,7 +31,19 @@ function App() {
         <Route path="/problem/:id" element={isSignedIn ? <ProblemPage /> : <Navigate to={"/"} />} />
         <Route path="/session/:id" element={isSignedIn ? <SessionPage /> : <Navigate to={"/"} />} />
         <Route path="/report/:id" element={isSignedIn ? <ReportPage /> : <Navigate to={"/"} />} />
-        <Route path="/admin/problems" element={isSignedIn ? <AdminProblemsPage /> : <Navigate to={"/"} />} />
+        <Route path="/feedback/:id" element={isSignedIn ? <CandidateFeedbackPage /> : <Navigate to={"/"} />} />
+
+        {/* Admin-only route — redirects non-admins to dashboard */}
+        <Route
+          path="/admin/problems"
+          element={
+            !isSignedIn
+              ? <Navigate to={"/"} />
+              : isAdmin
+              ? <AdminProblemsPage />
+              : <Navigate to={"/dashboard"} />
+          }
+        />
       </Routes>
 
       <Toaster toastOptions={{ duration: 3000 }} />

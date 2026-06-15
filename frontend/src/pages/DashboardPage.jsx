@@ -31,6 +31,7 @@ function DashboardPage() {
         candidateName: roomConfig.candidateName,
         candidateEmail: roomConfig.candidateEmail,
         scheduledAt: roomConfig.scheduledAt || null,
+        maxParticipants: roomConfig.maxParticipants || 2,
       },
       {
         onSuccess: (data) => {
@@ -46,19 +47,30 @@ function DashboardPage() {
 
   const isUserInSession = (session) => {
     if (!user?.id) return false;
-
-    return session.host?.clerkId === user?.id || session.participant?.clerkId === user?.id;
+    return (
+      session.host?.clerkId === user?.id || 
+      session.participant?.clerkId === user?.id ||
+      session.participants?.some(p => p?.clerkId === user?.id)
+    );
   };
 
   return (
-    <>
-      <div className="min-h-screen bg-base-300">
-        <Navbar />
-        <WelcomeSection onCreateSession={() => setShowCreateModal(true)} />
+    <div className="min-h-screen bg-mesh overflow-x-hidden text-base-content relative">
+      {/* Background Decorative Orbs (Matching Landing Page) */}
+      <div className="fixed top-20 left-10 w-72 h-72 bg-violet-500/15 rounded-full blur-[120px] pointer-events-none z-0 animate-float-pulse" />
+      <div className="fixed bottom-20 right-10 w-96 h-96 bg-cyan-500/15 rounded-full blur-[150px] pointer-events-none z-0 animate-float-pulse-delayed" />
+      
+      {/* Grid overlay */}
+      <div className="fixed inset-0 grid-pattern pointer-events-none opacity-10 z-0" />
 
-        {/* Grid layout */}
-        <div className="container mx-auto px-6 pb-16">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="relative z-10">
+        <Navbar />
+        
+        <main className="max-w-7xl mx-auto px-6 py-12">
+          <WelcomeSection onCreateSession={() => setShowCreateModal(true)} />
+
+          {/* Dashboard Grid layout */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mt-12">
             <StatsCards
               activeSessionsCount={activeSessions.length}
               recentSessionsCount={recentSessions.length}
@@ -71,18 +83,18 @@ function DashboardPage() {
           </div>
 
           <RecentSessions sessions={recentSessions} isLoading={loadingRecentSessions} />
-        </div>
-      </div>
+        </main>
 
-      <CreateSessionModal
-        isOpen={showCreateModal}
-        onClose={() => setShowCreateModal(false)}
-        roomConfig={roomConfig}
-        setRoomConfig={setRoomConfig}
-        onCreateRoom={handleCreateRoom}
-        isCreating={createSessionMutation.isPending}
-      />
-    </>
+        <CreateSessionModal
+          isOpen={showCreateModal}
+          onClose={() => setShowCreateModal(false)}
+          roomConfig={roomConfig}
+          setRoomConfig={setRoomConfig}
+          onCreateRoom={handleCreateRoom}
+          isCreating={createSessionMutation.isPending}
+        />
+      </div>
+    </div>
   );
 }
 

@@ -28,11 +28,31 @@ const problemSchema = new mongoose.Schema(
       javascript: { type: String },
       python: { type: String },
       java: { type: String },
+      cpp: { type: String },
     },
     expectedOutput: {
       javascript: { type: String },
       python: { type: String },
       java: { type: String },
+      cpp: { type: String },
+    },
+    hiddenTestCode: {
+      javascript: { type: String },
+      python: { type: String },
+      java: { type: String },
+      cpp: { type: String },
+    },
+    hiddenExpectedOutput: {
+      javascript: { type: String },
+      python: { type: String },
+      java: { type: String },
+      cpp: { type: String },
+    },
+    solutionCode: {
+      javascript: { type: String },
+      python: { type: String },
+      java: { type: String },
+      cpp: { type: String },
     },
   },
   { timestamps: true }

@@ -73,6 +73,23 @@ print(twoSum([3, 2, 4], 6))  # Expected: [1, 2]`,
       python: "[0, 1]\n[1, 2]",
       java: "[0, 1]",
     },
+    hiddenTestCode: {
+      javascript: `// Hidden Test Driver
+console.log(twoSum([3,3], 6));`,
+      python: `# Hidden Test Driver
+print(twoSum([3, 3], 6))`,
+      java: `class HiddenTest {
+    public static void main(String[] args) {
+        int[] result = Solution.twoSum(new int[]{3, 3}, 6);
+        System.out.println(java.util.Arrays.toString(result));
+    }
+}`
+    },
+    hiddenExpectedOutput: {
+      javascript: "[0, 1]",
+      python: "[0, 1]",
+      java: "[0, 1]",
+    }
   },
   {
     title: "Reverse String",
@@ -152,6 +169,28 @@ class Solution {
       python: "['o', 'l', 'l', 'e', 'h']\n['h', 'a', 'n', 'n', 'a', 'H']",
       java: "[o, l, l, e, h]\n[h, a, n, n, a, H]",
     },
+    hiddenTestCode: {
+      javascript: `// Hidden Test Driver
+const hiddenTest = ["a"];
+reverseString(hiddenTest);
+console.log(hiddenTest);`,
+      python: `# Hidden Test Driver
+hiddenTest = ["a"]
+reverseString(hiddenTest)
+print(hiddenTest)`,
+      java: `class HiddenTest {
+    public static void main(String[] args) {
+        char[] hiddenTest = {'a'};
+        Solution.reverseString(hiddenTest);
+        System.out.println(java.util.Arrays.toString(hiddenTest));
+    }
+}`
+    },
+    hiddenExpectedOutput: {
+      javascript: '["a"]',
+      python: "['a']",
+      java: "[a]",
+    }
   },
 ];
 

@@ -5,7 +5,7 @@ import { WebsocketProvider } from 'y-websocket'
 
 export function useYjsStore({ 
   roomId = 'example', 
-  hostUrl = 'wss://demos.yjs.dev/ws'
+  hostUrl = import.meta.env.VITE_YJS_URL || 'wss://demos.yjs.dev/ws'
 }) {
   const [store] = useState(() => createTLStore({ shapeUtils: [...defaultShapeUtils] }))
   const [storeWithStatus, setStoreWithStatus] = useState({ status: 'loading' })

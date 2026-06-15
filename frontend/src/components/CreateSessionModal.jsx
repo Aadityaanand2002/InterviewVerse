@@ -74,6 +74,32 @@ function CreateSessionModal({
 
           <div className="space-y-2">
             <label className="label">
+              <span className="label-text font-semibold">Interview Type</span>
+            </label>
+            <div className="flex gap-4">
+              <label 
+                className={`flex-1 flex items-center justify-center p-4 rounded-xl border-2 cursor-pointer transition-all ${(roomConfig.maxParticipants || 2) === 2 ? "border-primary bg-primary/10 text-primary" : "border-base-content/10 hover:border-base-content/20"}`} 
+                onClick={() => setRoomConfig({ ...roomConfig, maxParticipants: 2 })}
+              >
+                <div className="text-center">
+                  <span className="block font-bold">1-on-1 Interview</span>
+                  <span className="block text-xs opacity-70 mt-1">Host + Candidate</span>
+                </div>
+              </label>
+              <label 
+                className={`flex-1 flex items-center justify-center p-4 rounded-xl border-2 cursor-pointer transition-all ${roomConfig.maxParticipants === 99 ? "border-primary bg-primary/10 text-primary" : "border-base-content/10 hover:border-base-content/20"}`} 
+                onClick={() => setRoomConfig({ ...roomConfig, maxParticipants: 99 })}
+              >
+                <div className="text-center">
+                  <span className="block font-bold">Group Interview</span>
+                  <span className="block text-xs opacity-70 mt-1">Unlimited Participants</span>
+                </div>
+              </label>
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <label className="label">
               <span className="label-text font-semibold">Schedule For (Optional)</span>
             </label>
             <div className="flex gap-4">
