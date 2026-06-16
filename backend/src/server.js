@@ -15,6 +15,7 @@ import problemRoutes from "./routes/problemRoutes.js";
 import importRoutes from "./routes/importRoutes.js";
 import executeRoutes from "./routes/executeRoutes.js";
 import userRoutes from "./routes/userRoutes.js";
+import subscriberRoutes from "./routes/subscriberRoutes.js";
 
 if (!process.env.NODE_ENV) {
   process.env.NODE_ENV = "development";
@@ -39,6 +40,7 @@ app.use("/api/problems", problemRoutes);
 app.use("/api/import", importRoutes);
 app.use("/api/execute", executeRoutes);
 app.use("/api/users", userRoutes);
+app.use("/api/subscribers", subscriberRoutes);
 
 app.get("/health", (req, res) => {
   res.status(200).json({ msg: "api is up and running" });

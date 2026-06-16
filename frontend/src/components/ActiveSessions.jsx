@@ -30,9 +30,9 @@ function ActiveSessions({ sessions, isLoading, isUserInSession }) {
   };
 
   return (
-    <div className="lg:col-span-2 relative glass-card rounded-3xl p-8 h-full flex flex-col overflow-hidden border border-white/10 bg-[#0a0f18]/60 backdrop-blur-xl shadow-2xl">
+    <div className="lg:col-span-2 relative glass-card rounded-3xl p-8 h-full flex flex-col overflow-hidden shadow-2xl">
       {/* Background Glow */}
-      <div className="absolute top-1/2 right-0 -translate-y-1/2 translate-x-1/3 w-64 h-64 bg-violet-500/20 blur-[100px] rounded-full pointer-events-none" />
+      <div className="absolute top-1/2 right-0 -translate-y-1/2 translate-x-1/3 w-64 h-64 bg-primary/20 blur-[100px] rounded-full pointer-events-none hide-in-light" />
 
       {/* HEADERS SECTION */}
       <div className="flex items-center justify-between mb-8 relative z-10">
