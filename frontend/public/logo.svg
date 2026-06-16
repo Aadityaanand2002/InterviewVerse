@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" fill="none">
+  <defs>
+    <!-- Cyan Glow Filter -->
+    <filter id="cyanGlow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="6" result="blur" />
+      <feMerge>
+        <feMergeNode in="blur" />
+        <feMergeNode in="SourceGraphic" />
+      </feMerge>
+    </filter>
+  </defs>
+
+  <!-- Group with Glow -->
+  <g filter="url(#cyanGlow)">
+    
+    <!-- Outer Outline 'I' -->
+    <path d="M25 25 h 16 v 70 h -16 z" stroke="white" stroke-width="4" stroke-linejoin="round" />
+    <!-- Inner Line 'I' -->
+    <path d="M33 33 v 54" stroke="white" stroke-width="4" stroke-linecap="round" />
+
+    <!-- Outer Outline 'V' -->
+    <path d="M50 25 L 75 85 L 100 25" stroke="white" stroke-width="4" stroke-linejoin="round" stroke-linecap="round" />
+    <path d="M62 25 L 75 60 L 88 25" stroke="white" stroke-width="4" stroke-linejoin="round" stroke-linecap="round" />
+
+  </g>
+</svg>
