@@ -2,6 +2,7 @@ import { Link, useLocation } from "react-router";
 import { BookOpenIcon, LayoutDashboardIcon, SparklesIcon, ShieldIcon, BrainCircuitIcon } from "lucide-react";
 import { useUser, UserButton } from "@clerk/clerk-react";
 import { useCurrentUser } from "../hooks/useCurrentUser";
+import { ThemeToggle } from "./ThemeToggle";
 
 function Navbar() {
   const location = useLocation();
@@ -18,32 +19,31 @@ function Navbar() {
           to="/"
           className="flex items-center gap-3 hover:opacity-80 transition-opacity duration-200 group"
         >
-          {/* Premium Logo Container */}
-          <div className="relative size-11 rounded-2xl bg-gradient-to-br from-[#0a0f18] to-[#121827] border border-white/10 flex items-center justify-center shadow-[inset_0_1px_1px_0_rgba(255,255,255,0.15),0_8px_16px_rgba(0,0,0,0.6)] overflow-hidden group-hover:scale-105 transition-transform duration-300">
-            {/* Background glowing orb */}
-            <div className="absolute inset-0 bg-gradient-to-br from-violet-500/20 to-cyan-500/20 group-hover:from-violet-500/40 group-hover:to-cyan-500/40 transition-colors duration-500 blur-md" />
-            
-            {/* Abstract Geometric 'IV' Vector Logo */}
-            <svg viewBox="0 0 100 100" className="w-full h-full relative z-10 p-2 drop-shadow-[0_2px_8px_rgba(139,92,246,0.8)]" fill="none" strokeWidth="10" strokeLinecap="round" strokeLinejoin="round">
-              <defs>
-                <linearGradient id="logo-grad-main" x1="0%" y1="0%" x2="100%" y2="100%">
-                  <stop stopColor="#c084fc" offset="0%" />
-                  <stop stopColor="#22d3ee" offset="100%" />
-                </linearGradient>
-              </defs>
-              {/* I - Letter */}
-              <path d="M28 20 v60" stroke="url(#logo-grad-main)" />
-              {/* V - Letter */}
-              <path d="M48 20 l14 60 l14 -60" stroke="url(#logo-grad-main)" />
-            </svg>
-          </div>
+          {/* Logo Image */}
+          <svg viewBox="0 0 120 120" fill="none" className="h-10 md:h-11 w-auto group-hover:scale-105 transition-transform duration-300 drop-shadow-sm dark:drop-shadow-[0_0_10px_rgba(34,211,238,0.4)]">
+            <defs>
+              <filter id="cyanGlowNav" x="-20%" y="-20%" width="140%" height="140%">
+                <feGaussianBlur stdDeviation="6" result="blur" />
+                <feMerge>
+                  <feMergeNode in="blur" />
+                  <feMergeNode in="SourceGraphic" />
+                </feMerge>
+              </filter>
+            </defs>
+            <g filter="url(#cyanGlowNav)">
+              <path d="M25 25 h 16 v 70 h -16 z" className="stroke-base-content" strokeWidth="4" strokeLinejoin="round" />
+              <path d="M33 33 v 54" className="stroke-base-content" strokeWidth="4" strokeLinecap="round" />
+              <path d="M50 25 L 75 85 L 100 25" className="stroke-base-content" strokeWidth="4" strokeLinejoin="round" strokeLinecap="round" />
+              <path d="M62 25 L 75 60 L 88 25" className="stroke-base-content" strokeWidth="4" strokeLinejoin="round" strokeLinecap="round" />
+            </g>
+          </svg>
           
           {/* Ultra-Premium Wordmark */}
           <div className="flex items-baseline" style={{ fontFamily: "'Outfit', sans-serif" }}>
-            <span className="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-violet-400 via-fuchsia-400 to-cyan-400 drop-shadow-sm">
+            <span className="text-2xl font-black text-base-content tracking-tight drop-shadow-sm">
               Interview
             </span>
-            <span className="text-2xl font-light text-gray-100 tracking-wider">
+            <span className="text-2xl font-bold text-primary tracking-wide drop-shadow-sm">
               Verse
             </span>
           </div>
@@ -89,7 +89,8 @@ function Navbar() {
             </Link>
           )}
 
-          <div className="ml-3 pl-3 border-l border-white/10">
+          <div className="ml-3 pl-3 border-l border-white/10 flex items-center gap-3">
+            <ThemeToggle />
             <UserButton
               appearance={{
                 elements: {
