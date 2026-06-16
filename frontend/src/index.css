@@ -9,8 +9,8 @@
 @layer base {
   :root {
     --radius-card: 1rem;
-    --glow-primary: 0 0 40px oklch(var(--p) / 0.3);
-    --glow-secondary: 0 0 40px oklch(var(--s) / 0.3);
+    --glow-primary: 0 0 40px color-mix(in srgb, var(--color-primary) 30.0%, transparent);
+    --glow-secondary: 0 0 40px color-mix(in srgb, var(--color-secondary) 30.0%, transparent);
   }
 
   html {
@@ -20,7 +20,7 @@
   body {
     font-family: "Inter", system-ui, sans-serif;
     -webkit-font-smoothing: antialiased;
-    background: oklch(var(--b2));
+    background: var(--b2);
   }
 
   button:not(:disabled),
@@ -33,20 +33,34 @@
   }
 }
 
+:root {
+  --bg-breathe-base: #f8fafc;
+  --glow-1-start: rgba(0, 102, 255, 0.05);
+  --glow-2-start: rgba(91, 33, 182, 0.03);
+  --glow-1-mid: rgba(0, 102, 255, 0.08);
+  --glow-2-mid: rgba(91, 33, 182, 0.05);
+}
+
+[data-theme='night'] {
+  --bg-breathe-base: #0a1128;
+  --glow-1-start: rgba(0, 102, 255, 0.15);
+  --glow-2-start: rgba(91, 33, 182, 0.15);
+  --glow-1-mid: rgba(0, 102, 255, 0.25);
+  --glow-2-mid: rgba(91, 33, 182, 0.25);
+}
+
 @keyframes mesh-breathe {
   0%, 100% {
-    background-color: oklch(var(--b1));
+    background-color: var(--bg-breathe-base);
     background-image:
-      radial-gradient(ellipse 80% 60% at 20% 0%, oklch(var(--p) / 0.12) 0%, transparent 60%),
-      radial-gradient(ellipse 60% 50% at 80% 10%, oklch(var(--s) / 0.08) 0%, transparent 55%),
-      radial-gradient(ellipse 50% 40% at 50% 100%, oklch(var(--a) / 0.06) 0%, transparent 50%);
+      radial-gradient(ellipse 80% 60% at 30% 0%, var(--glow-1-start) 0%, transparent 60%),
+      radial-gradient(ellipse 60% 50% at 70% 10%, var(--glow-2-start) 0%, transparent 55%);
   }
   50% {
-    background-color: oklch(var(--b1) / 0.95);
+    background-color: var(--bg-breathe-base);
     background-image:
-      radial-gradient(ellipse 100% 80% at 20% 0%, oklch(var(--p) / 0.22) 0%, transparent 70%),
-      radial-gradient(ellipse 80% 70% at 80% 10%, oklch(var(--s) / 0.18) 0%, transparent 65%),
-      radial-gradient(ellipse 70% 60% at 50% 100%, oklch(var(--a) / 0.15) 0%, transparent 60%);
+      radial-gradient(ellipse 100% 80% at 20% 0%, var(--glow-1-mid) 0%, transparent 70%),
+      radial-gradient(ellipse 80% 70% at 80% 10%, var(--glow-2-mid) 0%, transparent 65%);
   }
 }
 
@@ -56,18 +70,16 @@
 
 @keyframes hero-breathe {
   0%, 100% {
-    background-color: oklch(var(--b1));
+    background-color: var(--bg-breathe-base);
     background-image:
-      radial-gradient(ellipse 100% 80% at 10% -10%, oklch(var(--p) / 0.18) 0%, transparent 55%),
-      radial-gradient(ellipse 70% 60% at 90% 20%, oklch(var(--s) / 0.12) 0%, transparent 50%),
-      radial-gradient(ellipse 60% 50% at 40% 110%, oklch(var(--a) / 0.1) 0%, transparent 50%);
+      radial-gradient(ellipse 100% 80% at 20% -10%, var(--glow-1-start) 0%, transparent 55%),
+      radial-gradient(ellipse 70% 60% at 80% 20%, var(--glow-2-start) 0%, transparent 50%);
   }
   50% {
-    background-color: oklch(var(--b1) / 0.95);
+    background-color: var(--bg-breathe-base);
     background-image:
-      radial-gradient(ellipse 120% 100% at 10% -10%, oklch(var(--p) / 0.35) 0%, transparent 65%),
-      radial-gradient(ellipse 90% 80% at 90% 20%, oklch(var(--s) / 0.25) 0%, transparent 60%),
-      radial-gradient(ellipse 80% 70% at 40% 110%, oklch(var(--a) / 0.2) 0%, transparent 60%);
+      radial-gradient(ellipse 120% 100% at 10% -10%, var(--glow-1-mid) 0%, transparent 65%),
+      radial-gradient(ellipse 90% 80% at 90% 20%, var(--glow-2-mid) 0%, transparent 60%);
   }
 }
 
@@ -77,19 +89,19 @@
 
 /* ===== GLASSMORPHISM ===== */
 .glass-card {
-  background: linear-gradient(135deg, oklch(var(--b1) / 0.4) 0%, oklch(var(--b1) / 0.6) 100%);
+  background: linear-gradient(135deg, color-mix(in srgb, var(--color-base-100) 40.0%, transparent) 0%, color-mix(in srgb, var(--color-base-100) 60.0%, transparent) 100%);
   backdrop-filter: blur(24px);
   -webkit-backdrop-filter: blur(24px);
-  border: 1px solid oklch(var(--p) / 0.15);
-  border-top: 1px solid oklch(var(--p) / 0.3);
+  border: 1px solid color-mix(in srgb, var(--color-primary) 15.0%, transparent);
+  border-top: 1px solid color-mix(in srgb, var(--color-primary) 30.0%, transparent);
   box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.05), 0 8px 32px 0 rgba(0, 0, 0, 0.3);
 }
 
 .glass-nav {
-  background: oklch(var(--b1) / 0.8);
+  background: color-mix(in srgb, var(--color-base-100) 80.0%, transparent);
   backdrop-filter: blur(24px);
   -webkit-backdrop-filter: blur(24px);
-  border-bottom: 1px solid oklch(var(--p) / 0.1);
+  border-bottom: 1px solid color-mix(in srgb, var(--color-primary) 10.0%, transparent);
 }
 
 /* ===== GLOW EFFECTS ===== */
@@ -102,7 +114,7 @@
 }
 
 .text-glow {
-  text-shadow: 0 0 30px oklch(var(--p) / 0.5);
+  text-shadow: 0 0 30px color-mix(in srgb, var(--color-primary) 50.0%, transparent);
 }
 
 /* ===== GRADIENT TEXT ===== */
@@ -125,7 +137,7 @@
   position: absolute;
   inset: -1px;
   border-radius: inherit;
-  background: linear-gradient(135deg, oklch(var(--p)), oklch(var(--s)), oklch(var(--a)), oklch(var(--p)));
+  background: linear-gradient(135deg, var(--color-primary), var(--color-secondary), var(--color-accent), var(--color-primary));
   background-size: 300% 300%;
   animation: gradient-rotate 4s ease infinite;
   z-index: -1;
@@ -165,7 +177,7 @@
   position: absolute;
   inset: 0;
   border-radius: 50%;
-  background: oklch(var(--su));
+  background: var(--su);
   animation: pulse-ring 1.5s ease-out infinite;
 }
 
@@ -220,6 +232,25 @@
 
 .animate-fade-in { animation: fade-in 0.6s ease both; }
 
+/* ===== MARQUEE SCROLL ===== */
+@keyframes scroll {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+.animate-marquee {
+  animation: scroll 30s linear infinite;
+}
+
+.animate-marquee:hover {
+  animation-play-state: paused;
+}
+
+.mask-horizontal {
+  mask-image: linear-gradient(to right, transparent, black 10%, black 90%, transparent);
+  -webkit-mask-image: linear-gradient(to right, transparent, black 10%, black 90%, transparent);
+}
+
 /* ===== CARD HOVER LIFT ===== */
 .card-lift {
   transition: transform 0.2s ease, box-shadow 0.2s ease;
@@ -227,21 +258,21 @@
 
 .card-lift:hover {
   transform: translateY(-4px);
-  box-shadow: 0 20px 40px oklch(var(--b3) / 0.8), 0 0 0 1px oklch(var(--p) / 0.1);
+  box-shadow: 0 20px 40px rgba(139, 92, 246, 0.15), 0 0 0 1px rgba(139, 92, 246, 0.4);
 }
 
 /* ===== GRADIENT BUTTON ===== */
 .btn-gradient {
-  background: linear-gradient(135deg, oklch(var(--p)), oklch(var(--s)));
+  background: linear-gradient(135deg, var(--color-primary, #6366f1), var(--color-secondary, #a855f7));
   color: white;
   border: none;
   transition: all 0.2s ease;
-  box-shadow: 0 4px 15px oklch(var(--p) / 0.3);
+  box-shadow: 0 4px 15px rgba(99, 102, 241, 0.3);
 }
 
 .btn-gradient:hover {
   transform: translateY(-1px);
-  box-shadow: 0 8px 25px oklch(var(--p) / 0.45);
+  box-shadow: 0 8px 25px rgba(99, 102, 241, 0.45);
   filter: brightness(1.1);
 }
 
@@ -256,12 +287,12 @@
 }
 
 ::-webkit-scrollbar-thumb {
-  background: oklch(var(--p) / 0.3);
+  background: color-mix(in srgb, var(--color-primary) 30.0%, transparent);
   border-radius: 9999px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: oklch(var(--p) / 0.5);
+  background: color-mix(in srgb, var(--color-primary) 50.0%, transparent);
 }
 
 /* ===== STAT NUMBER COUNT ANIMATION ===== */
@@ -277,8 +308,8 @@
 /* ===== GRID PATTERN OVERLAY ===== */
 .grid-pattern {
   background-image:
-    linear-gradient(oklch(var(--p) / 0.04) 1px, transparent 1px),
-    linear-gradient(90deg, oklch(var(--p) / 0.04) 1px, transparent 1px);
+    linear-gradient(color-mix(in srgb, var(--color-primary) 4.0%, transparent) 1px, transparent 1px),
+    linear-gradient(90deg, color-mix(in srgb, var(--color-primary) 4.0%, transparent) 1px, transparent 1px);
   background-size: 40px 40px;
 }
 
@@ -293,23 +324,23 @@
   font-size: 0.95rem;
 }
 .leetcode-html pre {
-  background-color: oklch(var(--b2));
+  background-color: var(--b2);
   padding: 1rem;
   border-radius: 0.5rem;
   font-family: "JetBrains Mono", ui-monospace, monospace;
   font-size: 0.875rem;
   margin: 1rem 0;
-  border-left: 4px solid oklch(var(--p) / 0.5);
+  border-left: 4px solid color-mix(in srgb, var(--color-primary) 50.0%, transparent);
   overflow-x: auto;
   white-space: pre-wrap;
 }
 .leetcode-html code {
-  background-color: oklch(var(--b2));
+  background-color: var(--b2);
   padding: 0.1rem 0.3rem;
   border-radius: 0.25rem;
   font-family: "JetBrains Mono", ui-monospace, monospace;
   font-size: 0.875em;
-  color: oklch(var(--p));
+  color: var(--color-primary);
 }
 .leetcode-html strong.example {
   display: block;
@@ -327,6 +358,19 @@
 }
 .leetcode-html li {
   margin-bottom: 0.5rem;
+}
+
+/* Override light mode text color to be stronger/darker */
+[data-theme='winter'] {
+  --bc: 0.25 0.05 250; /* A much darker slate blue/black for stronger contrast */
+}
+
+/* Remove blue mesh/breathing background entirely in light mode */
+[data-theme='winter'] .bg-mesh,
+[data-theme='winter'] .hero-bg {
+  background-image: none !important;
+  animation: none !important;
+  background-color: var(--color-base-100) !important;
 }
 
 /* ===== NEW CUSTOM ANIMATIONS ===== */
@@ -408,4 +452,18 @@
 
 .str-video__participant-view video {
   object-fit: cover !important;
+}
+
+[data-theme='winter'] .glass-card {
+  box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.8), 0 8px 32px 0 rgba(0, 0, 0, 0.06);
+  background: linear-gradient(135deg, color-mix(in srgb, var(--color-base-100) 80.0%, transparent) 0%, color-mix(in srgb, var(--color-base-100) 90.0%, transparent) 100%);
+}
+
+[data-theme='winter'] .welcome-3d-wrapper {
+  opacity: 0.15;
+  mix-blend-mode: multiply;
+}
+
+[data-theme='winter'] .hide-in-light {
+  display: none !important;
 }
