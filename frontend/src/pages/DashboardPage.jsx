@@ -56,12 +56,10 @@ function DashboardPage() {
 
   return (
     <div className="min-h-screen bg-mesh overflow-x-hidden text-base-content relative">
-      {/* Background Decorative Orbs (Matching Landing Page) */}
-      <div className="fixed top-20 left-10 w-72 h-72 bg-violet-500/15 rounded-full blur-[120px] pointer-events-none z-0 animate-float-pulse" />
-      <div className="fixed bottom-20 right-10 w-96 h-96 bg-cyan-500/15 rounded-full blur-[150px] pointer-events-none z-0 animate-float-pulse-delayed" />
+      {/* Background Decorative Orbs (Removed to match Landing Page exactly) */}
       
       {/* Grid overlay */}
-      <div className="fixed inset-0 grid-pattern pointer-events-none opacity-10 z-0" />
+      <div className="fixed inset-0 grid-pattern pointer-events-none opacity-30 z-0" />
 
       <div className="relative z-10">
         <Navbar />

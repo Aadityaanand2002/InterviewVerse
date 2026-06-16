@@ -32,7 +32,7 @@ function RecentSessions({ sessions, isLoading }) {
               <Link
                 key={session._id}
                 to={linkTo}
-                className="group relative p-6 rounded-3xl overflow-hidden border border-white/5 hover:border-cyan-500/50 bg-[#0a0f18]/40 hover:bg-[#0d131f]/80 backdrop-blur-md transition-all duration-500 hover:-translate-y-2 hover:shadow-[0_0_40px_rgba(34,211,238,0.15)] block animate-slide-up"
+                className="group relative p-6 rounded-3xl overflow-hidden glass-card hover:border-cyan-500/50 transition-all duration-500 hover:-translate-y-2 hover:shadow-[0_0_40px_rgba(34,211,238,0.15)] block animate-slide-up"
                 style={{ animationDelay: `${(i % 10) * 0.05}s` }}
               >
                 {/* Background ambient glow on hover */}
@@ -56,13 +56,13 @@ function RecentSessions({ sessions, isLoading }) {
 
                 <div className="flex items-start gap-4 mb-6 mt-2">
                   <div
-                    className={`shrink-0 size-12 rounded-xl flex items-center justify-center shadow-inner border border-white/10 ${
+                    className={`shrink-0 size-12 rounded-xl flex items-center justify-center shadow-inner border border-white/10 transition-colors duration-300 ${
                       session.status === "active"
                         ? "bg-gradient-to-br from-emerald-400 to-cyan-400"
-                        : "bg-base-200"
+                        : "bg-primary/10 group-hover:bg-primary/20 border-primary/20 group-hover:border-primary/40 group-hover:shadow-[0_0_15px_rgba(34,211,238,0.2)]"
                     }`}
                   >
-                    <Code2 className={`size-6 ${session.status === "active" ? "text-white" : "text-base-content/50"}`} />
+                    <Code2 className={`size-6 ${session.status === "active" ? "text-white" : "text-primary/70 group-hover:text-primary transition-colors duration-300"}`} />
                   </div>
                   
                   <div className="flex-1 min-w-0 pr-8">

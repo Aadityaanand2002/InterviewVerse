@@ -4,7 +4,7 @@ function StatsCards({ activeSessionsCount, recentSessionsCount }) {
   return (
     <div className="lg:col-span-1 grid grid-cols-1 gap-5">
       {/* Active Count */}
-      <div className="group glass-card rounded-3xl p-6 relative overflow-hidden border border-white/5 bg-[#0a0f18]/60 hover:bg-[#0d131f]/80 backdrop-blur-md transition-all duration-500 hover:-translate-y-1 hover:shadow-xl">
+      <div className="group glass-card rounded-3xl p-6 relative overflow-hidden transition-all duration-500 hover:-translate-y-1 hover:shadow-xl">
         <div className="absolute top-0 right-0 p-4 opacity-[0.03] group-hover:opacity-[0.08] transition-all duration-500 group-hover:scale-110 group-hover:rotate-6">
           <UsersIcon className="size-32" />
         </div>
@@ -31,7 +31,7 @@ function StatsCards({ activeSessionsCount, recentSessionsCount }) {
       </div>
 
       {/* Recent Count */}
-      <div className="group glass-card rounded-3xl p-6 relative overflow-hidden border border-white/5 bg-[#0a0f18]/60 hover:bg-[#0d131f]/80 backdrop-blur-md transition-all duration-500 hover:-translate-y-1 hover:shadow-xl">
+      <div className="group glass-card rounded-3xl p-6 relative overflow-hidden transition-all duration-500 hover:-translate-y-1 hover:shadow-xl">
         <div className="absolute top-0 right-0 p-4 opacity-[0.03] group-hover:opacity-[0.08] transition-all duration-500 group-hover:scale-110 group-hover:-rotate-6">
           <TrophyIcon className="size-32" />
         </div>
